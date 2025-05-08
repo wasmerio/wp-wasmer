@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Disable Auto Updates
+ * Plugin Name: Wasmer MU Plugin
  * Description: Disables automatic theme, core, and plugin updates.
  */
 
