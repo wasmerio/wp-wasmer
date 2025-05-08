@@ -1,5 +1,11 @@
 <?php
 
+if (!defined('ABSPATH')) {
+    exit; // Exit if accessed directly.
+}
+
+require_once __DIR__ . '/defines.php';
+
 function wasmer_get_liveconfig_data() {
     global $wpdb;
     if (!function_exists('get_plugins')) {
@@ -78,6 +84,7 @@ function wasmer_get_liveconfig_data() {
         ],
         'php' => [
             'version' => phpversion(),
+            'architecture' => PHP_INT_SIZE === 8 ? '64' : '32',
             'memory_limit' => ini_get('memory_limit'),
             'max_execution_time' => ini_get('max_execution_time'),
             'max_input_time' => ini_get('max_input_time'),
@@ -134,4 +141,66 @@ function wasmer_graphql_query($url, $query, $variables, $authToken = null) {
 
     if (is_wp_error($response)) return null;
     return json_decode(wp_remote_retrieve_body($response), true);
+}
+
+
+
+  
+function wasmer_liveconfig_callback($request) {
+    $data = wasmer_get_liveconfig_data();
+    return $data;
+}
+
+function wasmer_check_callback($request) {
+    $data = [
+        'status' => 'success'
+    ];
+    return $data;
+}
+
+function wasmer_magiclogin_callback($request) {
+    $token = $_GET['magiclogin'] ?? null;
+
+    if (!$token) {
+        return new WP_Error( 'missing_token', 'Missing token', array( 'status' => 500 ) );
+    }
+    if (!WASMER_GRAPHQL_URL) {
+        return new WP_Error( 'missing_env_url', 'Missing environment variables: WASMER_GRAPHQL_URL', array( 'status' => 500 ) );
+    }
+    if (!WASMER_APP_ID) {
+        return new WP_Error( 'missing_env_appid', 'Missing environment variables: WASMER_APP_ID', array( 'status' => 500 ) );
+    }
+
+    $query = <<<'GRAPHQL'
+    query ($appid: ID!) {
+        viewer {
+            email
+        }
+        node(id: $appid) {
+            ... on DeployApp {
+                id
+            }
+        }
+    }
+    GRAPHQL;
+
+    $response = wasmer_graphql_query(WASMER_GRAPHQL_URL, $query, ['appid' => WASMER_APP_ID], $token);
+    if (!$response) {
+        return new WP_Error( 'graphql_error', 'GraphQL query failed', array( 'status' => 400 ) );
+    }
+
+    $viewer = $response['data']['viewer'] ?? null;
+    $node = $response['data']['node'] ?? null;
+
+    if (!$viewer || !$node || !isset($node['id'])) {
+        return new WP_Error( 'invalid_token', 'Invalid or expired token', array( 'status' => 403 ) );
+    }
+
+
+    // Create the response object
+    $response = new WP_REST_Response(["success" => true]);
+    $response->set_status( 201 );
+    $response->header( 'Location', $redirect_url );
+
+    return $response;
 }

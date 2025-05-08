@@ -4,14 +4,6 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define("WASMER_APP_ID", getenv('WASMER_APP_ID'));
-define("WASMER_PERISHABLE_TIMESTAMP", getenv('WASMER_PERISHABLE_TIMESTAMP'));
-
-// Hook to add admin menu
-// add_action('admin_menu', 'wasmer_add_admin_menu');
-// Hook to add a menu to the admin top bar
-add_action('admin_bar_menu', 'wasmer_add_top_bar_menu', 100);
-
 function wasmer_icon() {
     $svg_icon = '<svg viewBox="0 0 29 34" height="1em" width="1em"  fill="currentColor" style="vertical-align:middle;">
                         <g clip-path="url(#prefix__clip0_1268_12249)">
@@ -28,11 +20,10 @@ function wasmer_icon() {
     return $svg_icon;
 }
 function wasmer_base_url() {
-    $graphql_url = getenv('WASMER_GRAPHQL_URL');
-    if (!$graphql_url) {
+    if (!WASMER_GRAPHQL_URL) {
         return 'https://wasmer.io';
     }
-    $host = parse_url($graphql_url, PHP_URL_HOST);
+    $host = parse_url(WASMER_GRAPHQL_URL, PHP_URL_HOST);
     $host = str_replace('registry.', '', $host);
 
     return "https://$host";
@@ -182,16 +173,4 @@ function wasmer_dashboard_page() {
         <p>Welcome to the Wasmer plugin! Customize this dashboard as needed.</p>
     </div>
     <?php
-}
-
-// Activation hook
-register_activation_hook(__FILE__, 'wasmer_plugin_activate');
-function wasmer_plugin_activate() {
-    // Code to run on activation, e.g., setting default options.
-}
-
-// Deactivation hook
-register_deactivation_hook(__FILE__, 'wasmer_plugin_deactivate');
-function wasmer_plugin_deactivate() {
-    // Code to run on deactivation, e.g., cleaning up options.
 }

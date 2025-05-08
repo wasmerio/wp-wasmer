@@ -1,5 +1,15 @@
 <?php
 
+if (!defined('ABSPATH')) {
+    exit; // Exit if accessed directly.
+}
+
+require_once __DIR__ . '/defines.php';
+
+if (!WASMER_CLI) {
+    exit; // Exit if WASMER_CLI is not defined.
+}
+
 class Wasmer_Aio_Install_Command
 {
     /**
