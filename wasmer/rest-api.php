@@ -200,7 +200,17 @@ function wasmer_magiclogin_callback($request) {
     // Create the response object
     $response = new WP_REST_Response(["success" => true]);
     $response->set_status( 201 );
-    $response->header( 'Location', $redirect_url );
 
+    $login_data = [
+        'email' => $viewer['email'],
+        'redirect_location' => 'wasmer',
+        'client_id' => '',
+        'acting_client_id' => '',
+        'callback_url' => '',
+    ];
+
+    $redirect_url = wasmer_get_login_link($login_data);
+    
+    $response->header( 'Location', $redirect_url );
     return $response;
 }
