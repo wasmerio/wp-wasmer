@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Wasmer Plugin
+ * Plugin Name: WP Wasmer
  * Plugin URI: https://github.com/wasmerio/wp-wasmer
  * GitHub Plugin URI: https://github.com/wasmerio/wp-wasmer
  * Description: Wasmer Plugin for WordPress
