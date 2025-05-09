@@ -100,25 +100,9 @@ function wasmer_get_liveconfig_data()
 
 function wasmer_auto_login($args)
 {
-    if (! is_user_logged_in()) {
-        $user_id       = wasmer_get_user_id($args['email']);
-        $user          = get_user_by('ID', $user_id);
 
-        $redirect_page = wasmer_get_login_link($args);
-        if (! $user) {
-            wasmer_callback($args);
-            $response = new WP_REST_Response([]);
-            $response->set_status(302);
-            $response->header('Location', $redirect_page);
-            return $response;
-        }
-        $login_username = $user->user_login;
-        wp_set_current_user($user_id, $login_username);
-        wp_set_auth_cookie($user_id);
-        do_action('wp_login', $login_username, $user);
-        // Go to admin area
-        $args['redirect_page'] = $redirect_page;
-        do_action('wasmer_autologin', $args);
+    if (is_user_logged_in()) {
+        do_action('wasmer_autologin_user_logged_in', $args);
 
         wasmer_callback($args);
 
@@ -126,9 +110,33 @@ function wasmer_auto_login($args)
         $response->set_status(302);
         $response->header('Location', $redirect_page);
         return $response;
-    } else {
-        return new WP_Error('already_loggedin', 'The user is already logged in', array('status' => 500));
     }
+
+    // User not logged in
+    $user_id       = wasmer_get_user_id($args['email']);
+    $user          = get_user_by('ID', $user_id);
+
+    if (!$user) {
+        wasmer_callback($args);
+
+        $response = new WP_REST_Response([]);
+        $response->set_status(302);
+        $response->header('Location', $redirect_page);
+        return $response;
+    }
+
+    $login_username = $user->user_login;
+    wp_set_current_user($user_id, $login_username);
+    wp_set_auth_cookie($user_id);
+    do_action('wp_login', $login_username, $user);
+    do_action('wasmer_autologin', $args);
+
+    wasmer_callback($args);
+
+    $response = new WP_REST_Response([]);
+    $response->set_status(302);
+    $response->header('Location', $redirect_page);
+    return $response;
 }
 
 function wasmer_get_user_id($email)
@@ -247,21 +255,8 @@ function wasmer_magiclogin_callback($request)
         'acting_client_id' => '',
         'callback_url' => '',
     ];
-
-    if (is_user_logged_in()) {
-        $redirect_page = wasmer_get_login_link($wasmerLoginData);
-
-        $wasmerLoginData['redirect_page'] = $redirect_page;
-        do_action('wasmer_autologin_user_logged_in', $wasmerLoginData);
-
-        wasmer_callback($wasmerLoginData);
-
-        $response = new WP_REST_Response([]);
-        $response->set_status(302);
-        $response->header('Location', $redirect_page);
-
-        return $response;
-    }
+    $redirect_page = wasmer_get_login_link($wasmerLoginData);
+    $wasmerLoginData['redirect_page'] = $redirect_page;
 
     return wasmer_auto_login($wasmerLoginData);
 }
