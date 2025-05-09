@@ -6,7 +6,8 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/defines.php';
 
-function wasmer_get_liveconfig_data() {
+function wasmer_get_liveconfig_data()
+{
     global $wpdb;
     if (!function_exists('get_plugins')) {
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -26,14 +27,14 @@ function wasmer_get_liveconfig_data() {
     if (!function_exists('get_site_transient')) {
         require_once ABSPATH . 'wp-includes/option.php';
     }
-    
+
     $plugins = get_plugins();
     $themes = wp_get_themes();
     $update_plugins = get_site_transient('update_plugins');
     $update_themes = get_site_transient('update_themes');
     $update_core = get_site_transient('update_core');
 
-    $plugins = array_map(function($path, $plugin) use ($update_plugins) {
+    $plugins = array_map(function ($path, $plugin) use ($update_plugins) {
         $slug = dirname($path);
         if ($slug === '.') $slug = basename($path, '.php');
         $transient = $update_plugins->response[$path] ?? $update_plugins->no_update[$path] ?? null;
@@ -49,7 +50,7 @@ function wasmer_get_liveconfig_data() {
         ];
     }, array_keys($plugins), $plugins);
 
-    $themes = array_map(function($slug, $theme) use ($update_themes) {
+    $themes = array_map(function ($slug, $theme) use ($update_themes) {
         $transient = $update_themes->response[$slug] ?? $update_themes->no_update[$slug] ?? null;
         return [
             'slug' => $slug,
@@ -97,34 +98,74 @@ function wasmer_get_liveconfig_data() {
     ];
 }
 
-function wasmer_auto_login($args) {
-    if (!is_user_logged_in()) {
-        $user_id = wasmer_get_user_id($args['email']);
-        $user = get_user_by('ID', $user_id);
-        if (!$user) return;
-        wp_set_current_user($user_id);
+function wasmer_auto_login($args)
+{
+    if (! is_user_logged_in()) {
+        $user_id       = wasmer_get_user_id($args['email']);
+        $user          = get_user_by('ID', $user_id);
+
+        $redirect_page = wasmer_get_login_link($args);
+        if (! $user) {
+            wasmer_callback($args);
+            $response = new WP_REST_Response([]);
+            $response->set_status(302);
+            $response->header('Location', $redirect_page);
+            return $response;
+        }
+        $login_username = $user->user_login;
+        wp_set_current_user($user_id, $login_username);
         wp_set_auth_cookie($user_id);
-        do_action('wp_login', $user->user_login, $user);
+        do_action('wp_login', $login_username, $user);
+        // Go to admin area
+        $args['redirect_page'] = $redirect_page;
+        do_action('wasmer_autologin', $args);
+
+        wasmer_callback($args);
+
+        $response = new WP_REST_Response([]);
+        $response->set_status(302);
+        $response->header('Location', $redirect_page);
+        return $response;
+    } else {
+        return new WP_Error('already_loggedin', 'The user is already logged in', array('status' => 500));
     }
 }
 
-function wasmer_get_user_id($email) {
+function wasmer_get_user_id($email)
+{
     $admins = get_users([
         'role' => 'administrator',
         'search' => '*' . $email . '*',
         'search_columns' => ['user_email'],
     ]);
-    return $admins[0]->ID ?? get_users(['role' => 'administrator'])[0]->ID ?? null;
+    if (isset($admins[0]->ID)) {
+        return $admins[0]->ID;
+    }
+
+    $admins = get_users(['role' => 'administrator']);
+    if (isset($admins[0]->ID)) {
+        return $admins[0]->ID;
+    }
+
+    return null;
 }
 
-function wasmer_get_login_link($args) {
-    $query = ['platform' => $args['redirect_location']];
-    if (!empty($args['client_id'])) $query['client_id'] = $args['client_id'];
-    if (!empty($args['acting_client_id'])) $query['acting_client_id'] = $args['acting_client_id'];
-    return add_query_arg($query, admin_url());
+function wasmer_get_login_link($args)
+{
+    $query_args = [
+        'platform' => $args['redirect_location'],
+    ];
+    if (!empty($args['client_id'])) {
+        $query_args['client_id'] = $args['client_id'];
+    }
+    if (!empty($args['acting_client_id'])) {
+        $query_args['acting_client_id'] = $args['acting_client_id'];
+    }
+    return add_query_arg($query_args, admin_url());
 }
 
-function wasmer_graphql_query($url, $query, $variables, $authToken = null) {
+function wasmer_graphql_query($url, $query, $variables, $authToken = null)
+{
     $body = json_encode(['query' => $query, 'variables' => $variables]);
     $headers = [
         'Content-Type' => 'application/json',
@@ -145,30 +186,33 @@ function wasmer_graphql_query($url, $query, $variables, $authToken = null) {
 
 
 
-  
-function wasmer_liveconfig_callback($request) {
+
+function wasmer_liveconfig_callback($request)
+{
     $data = wasmer_get_liveconfig_data();
     return $data;
 }
 
-function wasmer_check_callback($request) {
+function wasmer_check_callback($request)
+{
     $data = [
         'status' => 'success'
     ];
     return $data;
 }
 
-function wasmer_magiclogin_callback($request) {
+function wasmer_magiclogin_callback($request)
+{
     $token = $_GET['magiclogin'] ?? null;
 
     if (!$token) {
-        return new WP_Error( 'missing_token', 'Missing token', array( 'status' => 500 ) );
+        return new WP_Error('missing_token', 'Missing token', array('status' => 500));
     }
     if (!WASMER_GRAPHQL_URL) {
-        return new WP_Error( 'missing_env_url', 'Missing environment variables: WASMER_GRAPHQL_URL', array( 'status' => 500 ) );
+        return new WP_Error('missing_env_url', 'Missing environment variables: WASMER_GRAPHQL_URL', array('status' => 500));
     }
     if (!WASMER_APP_ID) {
-        return new WP_Error( 'missing_env_appid', 'Missing environment variables: WASMER_APP_ID', array( 'status' => 500 ) );
+        return new WP_Error('missing_env_appid', 'Missing environment variables: WASMER_APP_ID', array('status' => 500));
     }
 
     $query = <<<'GRAPHQL'
@@ -186,29 +230,47 @@ function wasmer_magiclogin_callback($request) {
 
     $response = wasmer_graphql_query(WASMER_GRAPHQL_URL, $query, ['appid' => WASMER_APP_ID], $token);
     if (!$response) {
-        return new WP_Error( 'graphql_error', 'GraphQL query failed', array( 'status' => 400 ) );
+        return new WP_Error('graphql_error', 'GraphQL query failed', array('status' => 400));
     }
 
     $viewer = $response['data']['viewer'] ?? null;
     $node = $response['data']['node'] ?? null;
 
     if (!$viewer || !$node || !isset($node['id'])) {
-        return new WP_Error( 'invalid_token', 'Invalid or expired token', array( 'status' => 403 ) );
+        return new WP_Error('invalid_token', 'Invalid or expired token', array('status' => 403));
     }
 
-    $login_data = [
+    $wasmerLoginData = [
         'email' => $viewer['email'],
         'redirect_location' => 'wasmer',
         'client_id' => '',
         'acting_client_id' => '',
         'callback_url' => '',
     ];
-    $redirect_url = wasmer_get_login_link($login_data);
 
-    // Create the response object
-    $response = new WP_REST_Response([]);
-    $response->set_status( 302 );
-    $response->header( 'Location', $redirect_url );
+    if (is_user_logged_in()) {
+        $redirect_page = wasmer_get_login_link($wasmerLoginData);
 
-    return $response;
+        $wasmerLoginData['redirect_page'] = $redirect_page;
+        do_action('wasmer_autologin_user_logged_in', $wasmerLoginData);
+
+        wasmer_callback($wasmerLoginData);
+
+        $response = new WP_REST_Response([]);
+        $response->set_status(302);
+        $response->header('Location', $redirect_page);
+
+        return $response;
+    }
+
+    return wasmer_auto_login($wasmerLoginData);
+}
+
+function wasmer_callback($args)
+{
+    if (empty($args['callback_url'])) {
+        return;
+    }
+
+    wp_remote_post($args['callback_url'], ['body' => $args]);
 }
