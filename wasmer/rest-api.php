@@ -115,7 +115,7 @@ function wasmer_auto_login($args)
     // User not logged in
     $user_id       = wasmer_get_user_id($args['email']);
     $user          = get_user_by('ID', $user_id);
-
+    $redirect_page = $args['redirect_page'];
     if (!$user) {
         wasmer_callback($args);
 
