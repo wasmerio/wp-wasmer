@@ -196,6 +196,14 @@ function wasmer_magiclogin_callback($request) {
         return new WP_Error( 'invalid_token', 'Invalid or expired token', array( 'status' => 403 ) );
     }
 
+    $login_data = [
+        'email' => $viewer['email'],
+        'redirect_location' => 'wasmer',
+        'client_id' => '',
+        'acting_client_id' => '',
+        'callback_url' => '',
+    ];
+    $redirect_url = wasmer_get_login_link($login_data);
 
     // Create the response object
     $response = new WP_REST_Response(["success" => true]);
