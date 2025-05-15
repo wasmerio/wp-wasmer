@@ -108,6 +108,9 @@ function wasmer_auto_login($args)
 
         $response = new WP_REST_Response([]);
         $response->set_status(302);
+        $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+        $response->header('Pragma', 'no-cache');
+        $response->header('Expires', '0');
         $response->header('Location', $redirect_page);
         return $response;
     }
@@ -121,6 +124,9 @@ function wasmer_auto_login($args)
 
         $response = new WP_REST_Response([]);
         $response->set_status(302);
+        $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+        $response->header('Pragma', 'no-cache');
+        $response->header('Expires', '0');
         $response->header('Location', $redirect_page);
         return $response;
     }
@@ -135,6 +141,9 @@ function wasmer_auto_login($args)
 
     $response = new WP_REST_Response([]);
     $response->set_status(302);
+    $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+    $response->header('Pragma', 'no-cache');
+    $response->header('Expires', '0');
     $response->header('Location', $redirect_page);
     return $response;
 }
@@ -198,6 +207,10 @@ function wasmer_graphql_query($url, $query, $variables, $authToken = null)
 function wasmer_liveconfig_callback($request)
 {
     $data = wasmer_get_liveconfig_data();
+    $response = new WP_REST_Response($data);
+    $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+    $response->header('Pragma', 'no-cache');
+    $response->header('Expires', '0');
     return $data;
 }
 
@@ -206,7 +219,12 @@ function wasmer_check_callback($request)
     $data = [
         'status' => 'success'
     ];
-    return $data;
+    $response = new WP_REST_Response($data);
+    $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
+    $response->header('Pragma', 'no-cache');
+    $response->header('Expires', '0');
+
+    return response;
 }
 
 function wasmer_magiclogin_callback($request)
