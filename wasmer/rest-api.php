@@ -211,7 +211,7 @@ function wasmer_liveconfig_callback($request)
     $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
     $response->header('Pragma', 'no-cache');
     $response->header('Expires', '0');
-    return $data;
+    return $response;
 }
 
 function wasmer_check_callback($request)
