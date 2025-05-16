@@ -106,6 +106,11 @@ function wasmer_get_liveconfig_data()
 
 function wasmer_auto_login($args)
 {
+    // Note: important to not use new WP_REST_Response($data);
+    // and bypass the default response of the rest api,
+    // as it will set the `Expires` header to 0 making cookies
+    // expire immediately if being proxied by Cloudflare or other
+    // CDN proxies.
     $redirect_page = $args['redirect_page'];
 
     if (is_user_logged_in()) {
