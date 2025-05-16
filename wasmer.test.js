@@ -218,7 +218,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         wasmer_plugin: {
           dir: "/var/www/html/wp-content/plugins/wp-wasmer/",
           url: "http://localhost:8080/wp-content/plugins/wp-wasmer/",
-          version: "0.1.6",
+          version: "0.1.7",
         },
         wordpress: {
           debug: false,
@@ -270,7 +270,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
               name: "WP Wasmer",
               slug: "wp-wasmer",
               url: null,
-              version: "0.1.6",
+              version: "0.1.7",
             },
           ],
           posts: {
