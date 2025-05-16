@@ -65,6 +65,11 @@ function wasmer_get_liveconfig_data()
 
     return [
         'liveconfig_version' => '1',
+        'wasmer_plugin' => [
+            'version' => WP_WASMER_PLUGIN_VERSION,
+            'dir' => WP_WASMER_PLUGIN_DIR_PATH,
+            'url' => WP_WASMER_PLUGIN_DIR_URL,
+        ],
         'wordpress' => [
             'version' => get_bloginfo('version'),
             'latest_version' => $update_core->updates[0]->version ?? null,
@@ -224,7 +229,7 @@ function wasmer_check_callback($request)
     $response->header('Pragma', 'no-cache');
     $response->header('Expires', '0');
 
-    return response;
+    return $response;
 }
 
 function wasmer_magiclogin_callback($request)
