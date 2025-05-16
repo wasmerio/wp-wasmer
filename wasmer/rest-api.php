@@ -103,37 +103,34 @@ function wasmer_get_liveconfig_data()
     ];
 }
 
+
 function wasmer_auto_login($args)
 {
+    $redirect_page = $args['redirect_page'];
 
     if (is_user_logged_in()) {
         do_action('wasmer_autologin_user_logged_in', $args);
 
         wasmer_callback($args);
 
-        $response = new WP_REST_Response([]);
-        $response->set_status(302);
-        $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
-        $response->header('Pragma', 'no-cache');
-        $response->header('Expires', '0');
-        $response->header('Location', $redirect_page);
-        return $response;
+        header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Location: ' . $redirect_page);
+        http_response_code(302);
+        exit;
     }
 
     // User not logged in
     $user_id       = wasmer_get_user_id($args['email']);
     $user          = get_user_by('ID', $user_id);
-    $redirect_page = $args['redirect_page'];
     if (!$user) {
         wasmer_callback($args);
 
-        $response = new WP_REST_Response([]);
-        $response->set_status(302);
-        $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
-        $response->header('Pragma', 'no-cache');
-        $response->header('Expires', '0');
-        $response->header('Location', $redirect_page);
-        return $response;
+        header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Location: ' . $redirect_page);
+        http_response_code(302);
+        exit;
     }
 
     $login_username = $user->user_login;
@@ -144,13 +141,11 @@ function wasmer_auto_login($args)
 
     wasmer_callback($args);
 
-    $response = new WP_REST_Response([]);
-    $response->set_status(302);
-    $response->header('Cache-Control', 'private, no-cache, no-store, must-revalidate, max-age=0');
-    $response->header('Pragma', 'no-cache');
-    $response->header('Expires', '0');
-    $response->header('Location', $redirect_page);
-    return $response;
+    header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Location: ' . $redirect_page);
+    http_response_code(302);
+    exit;
 }
 
 function wasmer_get_user_id($email)
