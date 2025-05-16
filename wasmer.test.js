@@ -163,10 +163,15 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           "http://localhost:8080/wp-admin/?platform=wasmer",
           "Expected to redirect to wp-admin"
         );
+        // console.log(req.headers.get("set-cookie"));
         assert.match(
           req.headers.get("set-cookie"),
           /wordpress_logged_in_/i,
           "Expected set-cookie to be wordpress_logged_in_"
+        );
+        assert.ok(
+          !req.headers.has("Expires"),
+          "Expected not any expires header"
         );
       });
     });
