@@ -19,15 +19,6 @@ function wasmer_icon() {
                     </svg>';
     return $svg_icon;
 }
-function wasmer_base_url() {
-    if (!WASMER_GRAPHQL_URL) {
-        return 'https://wasmer.io';
-    }
-    $host = parse_url(WASMER_GRAPHQL_URL, PHP_URL_HOST);
-    $host = str_replace('registry.', '', $host);
-
-    return "https://$host";
-}
 
 function wasmer_app_dashboard_url($app_id) {
     return wasmer_base_url().'/id/'.$app_id;
