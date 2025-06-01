@@ -6,7 +6,7 @@
  * Description: Wasmer Plugin for WordPress
  * Author: Wasmer
  * Author URI: https://wasmer.io
- * Version: 0.1.7
+ * Version: 0.1.8
  * Text Domain: wasmer
  * Domain Path: /languages/
  * Requires at least: 6.0
@@ -18,10 +18,10 @@
  * @package  wp-wasmer
  * @category Core
  * @author   Wasmer
- * @version  0.1.7
+ * @version  0.1.8
  */
 
-define( 'WP_WASMER_PLUGIN_VERSION', '0.1.7' );
+define( 'WP_WASMER_PLUGIN_VERSION', '0.1.8' );
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
