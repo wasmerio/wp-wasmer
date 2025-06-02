@@ -1,0 +1,27 @@
+{
+  "name": "wp-wasmer-tests",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "test:wp-68": "WP_VERSION=6.8.1 node wasmer.test.js",
+    "test:wp-67": "WP_VERSION=6.7.2 node wasmer.test.js",
+    "test:wp-66": "WP_VERSION=6.6.1 node wasmer.test.js",
+    "test:wp-65": "WP_VERSION=6.5.3 node wasmer.test.js",
+    "test": "npm run test:wp-68 && npm run test:wp-67 && npm run test:wp-66 && npm run test:wp-65",
+    "server:wp-68": "wp-now start --wp=6.8.1 --path=/Users/syrusakbary/Development/wp-wasmer --blueprint=wp-blueprint.json --reset",
+    "server:wp-67": "wp-now start --wp=6.7.2 --path=/Users/syrusakbary/Development/wp-wasmer --blueprint=wp-blueprint.json --reset",
+    "server:wp-66": "wp-now start --wp=6.6.1 --path=/Users/syrusakbary/Development/wp-wasmer --blueprint=wp-blueprint.json --reset",
+    "server:wp-65": "wp-now start --wp=6.5.3 --path=/Users/syrusakbary/Development/wp-wasmer --blueprint=wp-blueprint.json --reset"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@wp-now/wp-now": "^0.1.74",
+    "fetch-cookie": "^3.1.0",
+    "graphql-yoga": "^5.13.4",
+    "object-contains": "^0.1.0",
+    "object-lib": "^5.2.4"
+  }
+}
