@@ -61,7 +61,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         server.stderr.on("data", (d) => process.stderr.write(`[srv] ${d}`));
       });
 
-      // Wait until it’s up
+      // Wait until it's up
       await serverStarted;
 
       const schema = createSchema({
@@ -107,7 +107,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
 
       // Pass it into a server to hook into request handlers.
       mockGraphQLServer = createServer(async (req, res) => {
-        console.log(`[graphql] Request (Authorization: ${req.headers["authorization"]})`);
+        console.log(
+          `[graphql] Request (Authorization: ${req.headers["authorization"]})`
+        );
         const result = await yoga(req, res);
         console.log("[graphql] Response");
         return result;
@@ -130,7 +132,25 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
   });
 
   describe("Wordpress ADMIN", () => {
-    describe("Upgrade WP alert appears", async () => {
+    describe("Upgrade WP alert appears", () => {
+      it("Has the right link to Wasmer", async () => {
+        const fetchWithCookie = fetchCookie(fetch);
+        const reqMagicLogin = await fetchWithCookie(
+          `${SERVER_URL}/?rest_route=/wasmer/v1/magiclogin&magiclogin=123`,
+          { redirect: "manual" }
+        );
+        const req = await fetchWithCookie(`${SERVER_URL}/wp-admin/`);
+        assert.equal(req.status, 200, "Expected status 200");
+        const body = await req.text();
+        // Matches this url: <a class='ab-item' role="menuitem" href='http://wasmer.xyz/id/abc' title='Go to Wasmer Control Panel' rel='noopener noreferrer'>Wasmer Control Panel</a>
+        const regex =
+          /<a[^>]*href=('|")http:\/\/wasmer\.xyz\/id\/abc('|")[^>]*>Wasmer Control Panel<\/a>/;
+        assert.match(
+          body,
+          regex,
+          "Expected to find at least one Wasmer Control Panel link"
+        );
+      });
       if (WP_VERSION !== LATEST_WP_VERSION) {
         // If an upgrade is available, the upgrade alert should appear
         it("normal notice appears in homepage", async () => {
@@ -143,7 +163,10 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           assert.equal(req.status, 200, "Expected status 200");
           const body = await req.text();
           assert.ok(
-            body.indexOf('>WordPress 6.8.1</a> is available!' > -1, "Expected WordPress upgrade alert")
+            body.indexOf(
+              ">WordPress 6.8.1</a> is available!" > -1,
+              "Expected WordPress upgrade alert"
+            )
           );
         });
         it("Wasmer notice appears in update-core.php", async () => {
