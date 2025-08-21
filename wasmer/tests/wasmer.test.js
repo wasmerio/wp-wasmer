@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 8080;
 const HOST = "127.0.0.1";
 const SERVER_URL = `http://${HOST}:${PORT}`;
 
-const LATEST_WP_VERSION = "6.8.1";
+const LATEST_WP_VERSION = "6.8.2";
 const WASMER_PLUGIN_VERSION = "0.1.9";
 const WP_VERSION = process.env.WP_VERSION || "6.7.1";
 const PHP_VERSION = process.env.PHP_VERSION || "8.3";
@@ -25,10 +25,8 @@ let server;
 let tempBlueprintFile;
 let mockGraphQLServer;
 
-describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
-  before(
-    async () => {
-      let filename = fileURLToPath(import.meta.url);
+async function createPHPServer(signal, blueprintFilename = "wp-blueprint-protected.json") {
+  let filename = fileURLToPath(import.meta.url);
       // 1) Start the server
       server = spawn(
         "node",
@@ -37,9 +35,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           "start",
           `--wp=${WP_VERSION}`,
           `--php=${PHP_VERSION}`,
-          "--skip-browser",
           `--port=${PORT}`,
-          `--blueprint=${resolve(dirname(filename), "wp-blueprint.json")}`,
+          "--skip-browser",
+          `--blueprint=${resolve(dirname(filename), blueprintFilename)}`,
           "--reset",
         ],
         {
@@ -119,6 +117,12 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
       mockGraphQLServer.listen(4000, () => {
         console.info("Server is running on http://localhost:4000/graphql");
       });
+}
+
+describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
+  before(
+    async () => {
+      await createPHPServer(signal);
     },
     { signal }
   );

@@ -24,7 +24,7 @@
         {
             "step": "writeFile",
             "path": "/var/www/html/wp-content/mu-plugins/force.php",
-            "data": "<?php"
+            "data": "<?php require_once 'wp-load.php'; require_once(ABSPATH .'/wp-content/plugins/wp-force-login/wp-force-login.php');"
         }
     ]
 }
