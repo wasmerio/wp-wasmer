@@ -1,0 +1,30 @@
+{
+    "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "steps": [
+        {
+            "step": "writeFile",
+            "path": "/var/www/html/wp-content/mu-plugins/wasmer-env-vars.php",
+            "data": "<?php\nputenv(\"WASMER_WEBSITE_URL=http://wasmer.xyz\");\nputenv(\"WASMER_GRAPHQL_URL=http://localhost:4000/graphql\");\nputenv(\"WASMER_APP_ID=abc\");"
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require_once 'wp-load.php'; require_once ABSPATH . WPINC . '/update.php'; wp_version_check( [], true ); ?>"
+        },
+        {
+            "step": "installPlugin",
+            "pluginZipFile": {
+                "resource": "wordpress.org/plugins",
+                "slug": "wp-force-login"
+            }
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require_once 'wp-load.php'; require_once(ABSPATH .'/wp-content/plugins/wp-force-login/wp-force-login.php'); require_once(ABSPATH .'/wp-admin/includes/plugin.php'); activate_plugin('wp-force-login/wp-force-login.php');"
+        },
+        {
+            "step": "writeFile",
+            "path": "/var/www/html/wp-content/mu-plugins/force.php",
+            "data": "<?php"
+        }
+    ]
+}

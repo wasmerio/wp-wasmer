@@ -89,6 +89,26 @@ function wasmer_plugin_deactivate()
   // Code to run on deactivation, e.g., cleaning up options.
 }
 
+/**
+ * Bypass Password-Protected Plugins to allow for REST API exceptions.
+ *
+ * @param mixed $result WP_Error if authentication error, null if authentication
+ *                      method wasn't used, true if authentication succeeded.
+ */
+function wasmer_bypass_rest_api_auth_errors( $result ) {
+
+  // Skip if request is authenticated
+  if (!empty($result)) {
+      return $result;
+  }
+
+  if (str_starts_with($_GET['rest_route'], '/wasmer/v1/')) {
+      return true;
+  }
+
+  return $result;
+}
+add_filter( 'rest_authentication_errors', 'wasmer_bypass_rest_api_auth_errors', 20 );
 
 /* -------------------------------------------------------------------------
  *  Stop WordPress from showing or fetching core updates
