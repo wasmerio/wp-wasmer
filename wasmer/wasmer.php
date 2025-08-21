@@ -106,9 +106,10 @@ function wasmer_bypass_rest_api_auth_errors( $result ) {
       return true;
   }
 
-  return $result;
+  return null;
 }
 add_filter( 'rest_authentication_errors', 'wasmer_bypass_rest_api_auth_errors', 20 );
+
 
 /* -------------------------------------------------------------------------
  *  Stop WordPress from showing or fetching core updates

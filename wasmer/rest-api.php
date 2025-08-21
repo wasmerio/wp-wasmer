@@ -114,15 +114,21 @@ function wasmer_auto_login($args)
     $redirect_page = $args['redirect_page'];
 
     if (is_user_logged_in()) {
-        do_action('wasmer_autologin_user_logged_in', $args);
+        // If the user is logged in, but the user_id is not set,
+        // we need to log the user in. This can happen if the user
+        // is logged in via a different method, such as a cookie.
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            do_action('wasmer_autologin_user_logged_in', $args);
 
-        wasmer_callback($args);
+            wasmer_callback($args);
 
-        header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Location: ' . $redirect_page);
-        http_response_code(302);
-        exit;
+            header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Location: ' . $redirect_page);
+            http_response_code(302);
+            exit;
+        }
     }
 
     // User not logged in
