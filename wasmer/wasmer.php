@@ -75,20 +75,6 @@ add_action('rest_api_init', function () {
 // Hook to add a menu to the admin top bar
 add_action('admin_bar_menu', 'wasmer_add_top_bar_menu', 100);
 
-// Activation hook
-register_activation_hook(__FILE__, 'wasmer_plugin_activate');
-function wasmer_plugin_activate()
-{
-  // Code to run on activation, e.g., setting default options.
-}
-
-// Deactivation hook
-register_deactivation_hook(__FILE__, 'wasmer_plugin_deactivate');
-function wasmer_plugin_deactivate()
-{
-  // Code to run on deactivation, e.g., cleaning up options.
-}
-
 /**
  * Bypass Password-Protected Plugins to allow for REST API exceptions.
  *

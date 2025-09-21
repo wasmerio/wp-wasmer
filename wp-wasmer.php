@@ -55,3 +55,17 @@ function wp_wasmer_display_php_version_notice() {
 }
 
 wp_wasmer_load();
+
+// Activation hook
+register_activation_hook(__FILE__, 'wasmer_plugin_activate');
+function wasmer_plugin_activate()
+{
+  // Code to run on activation, e.g., setting default options.
+}
+
+// Deactivation hook
+register_deactivation_hook(__FILE__, 'wasmer_plugin_deactivate');
+function wasmer_plugin_deactivate()
+{
+  // Code to run on deactivation, e.g., cleaning up options.
+}
