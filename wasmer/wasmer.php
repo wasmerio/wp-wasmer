@@ -59,14 +59,17 @@ add_action('rest_api_init', function () {
   register_rest_route('wasmer/v1', '/liveconfig', array(
     'methods' => 'GET',
     'callback' => 'wasmer_liveconfig_callback',
+    'permission_callback' => '__return_true',
   ));
   register_rest_route('wasmer/v1', '/check', array(
     'methods' => 'GET',
     'callback' => 'wasmer_check_callback',
+    'permission_callback' => '__return_true',
   ));
   register_rest_route('wasmer/v1', '/magiclogin', array(
     'methods' => 'GET',
     'callback' => 'wasmer_magiclogin_callback',
+    'permission_callback' => '__return_true',
   ));
 });
 
