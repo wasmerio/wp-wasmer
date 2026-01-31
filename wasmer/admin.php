@@ -271,8 +271,18 @@ function wasmer_dashboard_widget_display() {
     $dashboard_url = wasmer_app_dashboard_url(WASMER_APP_ID);
     $svg_icon = wasmer_icon();
     $wasmer_settings_url = wasmer_app_dashboard_wp_settings_url(WASMER_APP_ID);
+    $claim_app_url = wasmer_claim_app_url(WASMER_APP_ID);
     $requires_64_bit = wasmer_get_active_64_bit_required_plugins();
+    $time_left = get_perishable_time_left();
     ?>
+    <?php if ($time_left) : ?>
+        <div class="notice notice-error inline">
+            <p>
+                <strong>App expiring in <?= $time_left ?>.</strong>
+                <a href="<?= esc_url($claim_app_url) ?>" rel="noopener noreferrer">Claim App to prevent expiration</a>.
+            </p>
+        </div>
+    <?php endif; ?>
     <?php if (PHP_INT_SIZE !== 8 && !empty($requires_64_bit)) : ?>
         <div class="notice notice-warning inline">
             <p>
