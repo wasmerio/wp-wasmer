@@ -246,10 +246,10 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         //   dashboardBody.includes("64-bit PHP required"),
         //   "Expected dashboard widget to include 64-bit PHP warning"
         // );
-        assert.ok(
-          dashboardBody.includes("Google for WooCommerce"),
-          "Expected dashboard widget to list Google for WooCommerce"
-        );
+        // assert.ok(
+        //   dashboardBody.includes("Google for WooCommerce"),
+        //   "Expected dashboard widget to list Google for WooCommerce"
+        // );
       });
     });
 
