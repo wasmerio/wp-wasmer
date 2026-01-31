@@ -16,9 +16,9 @@ const PORT = process.env.PORT || 8080;
 const HOST = "127.0.0.1";
 const SERVER_URL = `http://${HOST}:${PORT}`;
 
-const LATEST_WP_VERSION = "6.8.2";
+const LATEST_WP_VERSION = "6.9";
 const WASMER_PLUGIN_VERSION = "0.2.0";
-const WP_VERSION = process.env.WP_VERSION || "6.7.1";
+const WP_VERSION = process.env.WP_VERSION || "6.8.2";
 const PHP_VERSION = process.env.PHP_VERSION || "8.3";
 
 let server;
