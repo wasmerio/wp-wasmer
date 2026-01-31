@@ -24,36 +24,62 @@ function wasmer_app_dashboard_url($app_id) {
     return wasmer_base_url().'/id/'.$app_id;
 }
 
+function wasmer_app_dashboard_wp_settings_url($app_id) {
+    return wasmer_app_dashboard_url($app_id) . '/settings/wordpress';
+}
+
 function wasmer_claim_app_url($app_id) {
     return wasmer_base_url().'/apps/claim/'.$app_id;
+}
+
+function get_perishable_time() {
+    if (!WASMER_PERISHABLE_TIMESTAMP) {
+        return null;
+    }
+    if (is_numeric(WASMER_PERISHABLE_TIMESTAMP)) {
+        return intval(WASMER_PERISHABLE_TIMESTAMP);
+    }
+    $datetime = new DateTimeImmutable(WASMER_PERISHABLE_TIMESTAMP);
+    if ($datetime) {
+        return $datetime->getTimestamp();
+    }
+    return null;
+}
+
+function get_perishable_time_left() {
+    $perishable_time = get_perishable_time();
+    if (!$perishable_time) {
+        return null;
+    }
+    $current_time = time();
+    $time_left = $perishable_time - $current_time;
+    if ($time_left > 0) {
+        $time_left_text = '';
+        if ($time_left > 86400) { // More than a day
+            $days = floor($time_left / 86400);
+            $time_left_text = $days . ' day' . ($days > 1 ? 's' : '');
+        } elseif ($time_left >= 3600-60) { // More than an hour
+            $hours = floor($time_left / 3600);
+            $time_left_text = $hours . ' hour' . ($hours > 1 ? 's' : '');
+        } elseif ($time_left > 60-10) { // More than a minute
+            $minutes = floor($time_left / 60);
+            $time_left_text = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
+        } else {
+            $time_left_text = 'seconds';
+        }
+        return $time_left_text;
+    }
+    return null;
 }
 
 function wasmer_add_top_bar_menu($admin_bar) {
     // Calculate time left based on WASMER_PERISHABLE_TIMESTAMP
     $notification_preview = '';
     $notification_html = '';
-    if (WASMER_PERISHABLE_TIMESTAMP) {
-        $perishable_time = intval(WASMER_PERISHABLE_TIMESTAMP);
-        $current_time = current_time('timestamp');
-        $time_left = $perishable_time - $current_time;
-        if ($time_left > 0) {
-            $time_left_text = '';
-            if ($time_left > 86400) { // More than a day
-                $days = floor($time_left / 86400);
-                $time_left_text = $days . ' day' . ($days > 1 ? 's' : '');
-            } elseif ($time_left >= 3600-60) { // More than an hour
-                $hours = floor($time_left / 3600);
-                $time_left_text = $hours . ' hour' . ($hours > 1 ? 's' : '');
-            } elseif ($time_left > 60-10) { // More than a minute
-                $minutes = floor($time_left / 60);
-                $time_left_text = $minutes . ' minute' . ($minutes > 1 ? 's' : '');
-            } else {
-                $time_left_text = 'seconds';
-            }
-
-            $notification_preview = ' <span class="awaiting-mod" style="display: inline-block; vertical-align: middle; margin: -2px 0 0 2px; padding: 0 5px; min-width: 7px; height: 17px; border-radius: 11px; background-color: #d63638; color: #fff; font-size: 9px; line-height: 17px; text-align: center; z-index: 26;">!</span>';
-            $notification_html = ' <span class="awaiting-mod" style="display: inline-block; vertical-align: middle; margin: -2px 0 0 2px; padding: 0 5px; min-width: 7px; height: 17px; border-radius: 11px; background-color: #d63638; color: #fff; font-size: 9px; line-height: 17px; text-align: center; z-index: 26;">App expiring in ' . $time_left_text . '</span>';
-        }
+    $time_left = get_perishable_time_left();
+    if ($time_left) {
+        $notification_preview = ' <span class="awaiting-mod" style="display: inline-block; vertical-align: middle; margin: -2px 0 0 2px; padding: 0 5px; min-width: 7px; height: 17px; border-radius: 11px; background-color: #d63638; color: #fff; font-size: 9px; line-height: 17px; text-align: center; z-index: 26;">!</span>';
+        $notification_html = ' <span class="awaiting-mod" style="display: inline-block; vertical-align: middle; margin: -2px 0 0 2px; padding: 0 5px; min-width: 7px; height: 17px; border-radius: 11px; background-color: #d63638; color: #fff; font-size: 9px; line-height: 17px; text-align: center; z-index: 26;">App expiring in ' . $time_left . '</span>';
     }
 
     // Add the main Wasmer menu
@@ -78,7 +104,7 @@ function wasmer_add_top_bar_menu($admin_bar) {
     //     ),
     // ));
 
-    if (WASMER_PERISHABLE_TIMESTAMP) {
+    if ($time_left) {
         $admin_bar->add_menu(array(
             'id'     => 'wasmer-dashboard-claim',
             'parent' => 'wasmer-top-menu', // Attach to the main Wasmer menu
@@ -147,6 +173,10 @@ function wasmer_add_admin_menu() {
 function wasmer_add_dashboard_widget() {
     global $wp_meta_boxes;
 
+    if (!WASMER_APP_ID) {
+        return;
+    }
+
     wp_add_dashboard_widget(
         'wasmer_manage_dashboard_widget',
         'Manage on Wasmer',
@@ -161,12 +191,99 @@ function wasmer_add_dashboard_widget() {
     }
 }
 
+function wasmer_get_64_bit_required_plugins() {
+    return [
+        [
+            'slug' => 'google-listings-and-ads',
+            'label' => 'Google for WooCommerce',
+            'names' => [
+                'Google for WooCommerce',
+                'Google Listings and Ads',
+                'Google Listings & Ads',
+            ],
+        ],
+        [
+            'slug' => 'all-in-one-wp-migration',
+            'label' => 'All-in-One WP Migration',
+            'names' => [
+                'All-in-One WP Migration',
+            ],
+        ],
+        [
+            'slug' => 'all-in-one-wp-migration-unlimited-extension',
+            'label' => 'All-in-One WP Migration Unlimited Extension',
+            'names' => [
+                'All-in-One WP Migration Unlimited Extension',
+            ],
+        ],
+        [
+            'slug' => 'duplicator',
+            'label' => 'Duplicator',
+            'names' => [
+                'Duplicator',
+            ],
+        ],
+        [
+            'slug' => 'backwpup',
+            'label' => 'BackWPup',
+            'names' => [
+                'BackWPup',
+            ],
+        ],
+    ];
+}
+
+function wasmer_get_active_64_bit_required_plugins() {
+    if (!function_exists('get_plugins')) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+
+    $required = wasmer_get_64_bit_required_plugins();
+    $plugins = get_plugins();
+    $matches = [];
+
+    foreach ($plugins as $path => $plugin) {
+        if (!is_plugin_active($path)) {
+            continue;
+        }
+        $slug = dirname($path);
+        if ($slug === '.') {
+            $slug = basename($path, '.php');
+        }
+        $name = $plugin['Name'] ?? '';
+
+        foreach ($required as $required_plugin) {
+            $slug_match = $slug === $required_plugin['slug']
+                || $path === $required_plugin['slug']
+                || str_starts_with($path, $required_plugin['slug'] . '/');
+            $name_match = in_array($name, $required_plugin['names'], true);
+            if ($slug_match || $name_match) {
+                $matches[] = $required_plugin['label'];
+                break;
+            }
+        }
+    }
+
+    return array_values(array_unique($matches));
+}
+
 function wasmer_dashboard_widget_display() {
-    $dashboard_url = WASMER_APP_ID
-        ? wasmer_app_dashboard_url(WASMER_APP_ID)
-        : wasmer_base_url();
+    $dashboard_url = wasmer_app_dashboard_url(WASMER_APP_ID);
     $svg_icon = wasmer_icon();
+    $wasmer_settings_url = wasmer_app_dashboard_wp_settings_url(WASMER_APP_ID);
+    $requires_64_bit = wasmer_get_active_64_bit_required_plugins();
     ?>
+    <?php if (PHP_INT_SIZE !== 8 && !empty($requires_64_bit)) : ?>
+        <div class="notice notice-warning inline">
+            <p>
+                <strong>64-bit PHP required.</strong>
+                The following active plugins require 64-bit PHP:
+                <?= esc_html(implode(', ', $requires_64_bit)) ?>.
+                Please update your PHP version in the
+                <a href="<?= esc_url($wasmer_settings_url) ?>" rel="noopener noreferrer">Wasmer WordPress Settings</a>.
+            </p>
+        </div>
+    <?php endif; ?>
     <p>Manage this WordPress app from your Wasmer Control Panel.</p>
     <p>Update settings like <code>wp-config.php</code> or <code>php.ini</code> in one place.</p>
     <p>

@@ -22,6 +22,17 @@
             "code": "<?php require_once 'wp-load.php'; require_once(ABSPATH .'/wp-content/plugins/wp-force-login/wp-force-login.php'); require_once(ABSPATH .'/wp-admin/includes/plugin.php'); activate_plugin('wp-force-login/wp-force-login.php');"
         },
         {
+            "step": "installPlugin",
+            "pluginZipFile": {
+                "resource": "wordpress.org/plugins",
+                "slug": "google-listings-and-ads"
+            }
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php require_once 'wp-load.php'; require_once(ABSPATH .'/wp-content/plugins/google-listings-and-ads/google-listings-and-ads.php'); require_once(ABSPATH .'/wp-admin/includes/plugin.php'); activate_plugin('google-listings-and-ads/google-listings-and-ads.php');"
+        },
+        {
             "step": "writeFile",
             "path": "/var/www/html/wp-content/mu-plugins/force.php",
             "data": "<?php require_once 'wp-load.php'; require_once(ABSPATH .'/wp-content/plugins/wp-force-login/wp-force-login.php');"

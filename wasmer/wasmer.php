@@ -136,10 +136,14 @@ add_filter('automatic_updater_disabled', '__return_true', PHP_INT_MAX);
 function wasmer_dcu_block_core_download($reply, $package, $upgrader)
 {
   if ($upgrader instanceof Core_Upgrader) {
-    return new WP_Error(
+    $error = new WP_Error(
       'core_upgrade_disabled',
-      __('Manual WordPress core upgrades are disabled. Please use the Wasmer settings to upgrade your WordPress core.')
+      __('Manual WordPress core upgrades are disabled. Please use the Wasmer WordPress Settings to upgrade the WP version.')
     );
+    $error->add_data([
+      'help_url' => wasmer_app_dashboard_wp_settings_url(WASMER_APP_ID),
+    ]);
+    return $error;
   }
 
   // For theme/plugin uploads we allow normal behaviour.
