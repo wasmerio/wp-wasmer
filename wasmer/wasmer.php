@@ -74,6 +74,8 @@ add_action('rest_api_init', function () {
 // add_action('admin_menu', 'wasmer_add_admin_menu');
 // Hook to add a menu to the admin top bar
 add_action('admin_bar_menu', 'wasmer_add_top_bar_menu', 100);
+// Hook to add dashboard widget
+add_action('wp_dashboard_setup', 'wasmer_add_dashboard_widget');
 
 // Activation hook
 register_activation_hook(__FILE__, 'wasmer_plugin_activate');

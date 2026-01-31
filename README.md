@@ -330,7 +330,7 @@ For manual testing of endpoints:
 
 1. **Start a local WordPress instance** (using wp-now or similar):
 ```bash
-npx @wp-now/wp-now start --wp=6.7.1 --php=8.3 --port=8080
+npx @wp-now/wp-now start --wp=6.7.1 --php=8.3 --port=8080 --blueprint=wasmer/tests/wp-blueprint-protected.json
 ```
 
 2. **Set environment variables** in a mu-plugin or via `putenv()`:

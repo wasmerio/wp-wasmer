@@ -144,6 +144,39 @@ function wasmer_add_admin_menu() {
     // );
 }
 
+function wasmer_add_dashboard_widget() {
+    global $wp_meta_boxes;
+
+    wp_add_dashboard_widget(
+        'wasmer_manage_dashboard_widget',
+        'Manage on Wasmer',
+        'wasmer_dashboard_widget_display'
+    );
+
+    if (isset($wp_meta_boxes['dashboard']['normal']['core']['wasmer_manage_dashboard_widget'])) {
+        $wasmer_widget = $wp_meta_boxes['dashboard']['normal']['core']['wasmer_manage_dashboard_widget'];
+        unset($wp_meta_boxes['dashboard']['normal']['core']['wasmer_manage_dashboard_widget']);
+        $wp_meta_boxes['dashboard']['normal']['core'] =
+            array_merge(array('wasmer_manage_dashboard_widget' => $wasmer_widget), $wp_meta_boxes['dashboard']['normal']['core']);
+    }
+}
+
+function wasmer_dashboard_widget_display() {
+    $dashboard_url = WASMER_APP_ID
+        ? wasmer_app_dashboard_url(WASMER_APP_ID)
+        : wasmer_base_url();
+    $svg_icon = wasmer_icon();
+    ?>
+    <p>Manage this WordPress app from your Wasmer Control Panel.</p>
+    <p>Update settings like <code>wp-config.php</code> or <code>php.ini</code> in one place.</p>
+    <p>
+        <a class="button button-primary" href="<?= esc_url($dashboard_url) ?>" rel="noopener noreferrer">
+            <?= $svg_icon ?> Open Wasmer Control Panel
+        </a>
+    </p>
+    <?php
+}
+
 // Callback function for the external link submenu
 function wasmer_external_link_page() {
     // Redirect to the Wasmer.io site

@@ -234,6 +234,14 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           dashboardBody.includes("Dashboard"),
           "Expected dashboard to include 'Dashboard'"
         );
+        assert.ok(
+          dashboardBody.includes("Manage on Wasmer"),
+          "Expected dashboard to include 'Manage on Wasmer' widget"
+        );
+        assert.ok(
+          dashboardBody.includes("wp-config.php"),
+          "Expected dashboard widget to mention wp-config.php"
+        );
       });
     });
 
