@@ -76,7 +76,7 @@ Returns comprehensive information about the WordPress installation, including pl
 {
   "liveconfig_version": "1",
   "wasmer_plugin": {
-    "version": "0.2.0",
+    "version": "0.3.0",
     "dir": "/var/www/html/wp-content/plugins/wp-wasmer/",
     "url": "http://localhost:8080/wp-content/plugins/wp-wasmer/"
   },
@@ -95,7 +95,7 @@ Returns comprehensive information about the WordPress installation, including pl
         "icon": null,
         "url": null,
         "name": "WP Wasmer",
-        "version": "0.2.0",
+        "version": "0.3.0",
         "description": "Wasmer Plugin for WordPress",
         "is_active": true,
         "latest_version": null
