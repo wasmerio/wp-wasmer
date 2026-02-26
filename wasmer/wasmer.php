@@ -214,3 +214,12 @@ function wasmer_dcu_admin_notice()
   }
 }
 add_action('admin_notices', 'wasmer_dcu_admin_notice', 1);
+
+/* -------------------------------------------------------------------------
+ *  Allows .htaccess working well in Wasmer
+ * ---------------------------------------------------------------------- */
+
+// Enforce .htaccess support if server is phpix
+if ( PHP_SAPI === 'phpix' ) {
+  add_filter('got_rewrite', '__return_true');
+}
