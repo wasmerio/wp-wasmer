@@ -9,6 +9,13 @@
         {
             "step": "runPHP",
             "code": "<?php require_once 'wp-load.php'; require_once ABSPATH . WPINC . '/update.php'; wp_version_check( [], true ); ?>"
+        },
+        {
+            "step": "installPlugin",
+            "pluginZipFile": {
+                "resource": "wordpress.org/plugins",
+                "slug": "wp-force-login"
+            }
         }
     ]
 }
