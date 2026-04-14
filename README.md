@@ -10,6 +10,7 @@ The WP Wasmer plugin enables seamless integration between WordPress sites and th
 - Admin interface enhancements with Wasmer Control Panel access
 - WordPress core update management (blocks manual updates, redirects to Wasmer)
 - WP-CLI commands for automated installations
+- WP-CLI access to the liveconfig payload
 
 ## Installation
 
@@ -76,7 +77,7 @@ Returns comprehensive information about the WordPress installation, including pl
 {
   "liveconfig_version": "1",
   "wasmer_plugin": {
-    "version": "0.3.0",
+    "version": "0.3.2",
     "dir": "/var/www/html/wp-content/plugins/wp-wasmer/",
     "url": "http://localhost:8080/wp-content/plugins/wp-wasmer/"
   },
@@ -95,7 +96,7 @@ Returns comprehensive information about the WordPress installation, including pl
         "icon": null,
         "url": null,
         "name": "WP Wasmer",
-        "version": "0.3.0",
+        "version": "0.3.2",
         "description": "Wasmer Plugin for WordPress",
         "is_active": true,
         "latest_version": null
@@ -159,6 +160,16 @@ Returns comprehensive information about the WordPress installation, including pl
 ```bash
 curl "http://localhost:8080/?rest_route=/wasmer/v1/liveconfig"
 ```
+
+## WP-CLI Commands
+
+If the plugin is active in a WordPress installation with WP-CLI available, you can print the liveconfig payload directly from the shell:
+
+```bash
+wp wasmer liveconfig
+```
+
+This command returns the same JSON payload as `/?rest_route=/wasmer/v1/liveconfig`.
 
 #### 3. Magic Login - `/wasmer/v1/magiclogin`
 
@@ -371,4 +382,3 @@ GPL-3.0
 ## Support
 
 For issues, feature requests, or contributions, please visit the [GitHub repository](https://github.com/wasmerio/wp-wasmer).
-
