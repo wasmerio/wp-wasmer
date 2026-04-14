@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { describe, it, before, after } from "node:test";
 import { createSchema } from "graphql-yoga";
 import { createServer } from "node:http";
@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 8080;
 const HOST = "127.0.0.1";
 const SERVER_URL = `http://${HOST}:${PORT}`;
 
-const LATEST_WP_VERSION = "6.9.1";
-const WASMER_PLUGIN_VERSION = "0.3.0";
+const LATEST_WP_VERSION = "6.9.4";
+const WASMER_PLUGIN_VERSION = "0.3.2";
 const WP_VERSION = process.env.WP_VERSION || "6.8.2";
 const PHP_VERSION = process.env.PHP_VERSION || "8.3";
 
@@ -395,6 +395,26 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           version: WP_VERSION,
         },
       });
+    });
+  });
+
+  describe("WP-CLI", () => {
+    it("registers wasmer liveconfig", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/wp-cli-liveconfig.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
     });
   });
 

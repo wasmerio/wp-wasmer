@@ -10,6 +10,42 @@ if (!WASMER_CLI) {
     exit; // Exit if WASMER_CLI is not defined.
 }
 
+class Wasmer_Command
+{
+    /**
+     * Print the same payload returned by the Wasmer liveconfig REST endpoint.
+     *
+     * ## OPTIONS
+     *
+     * [--format=<format>]
+     * : Output format.
+     * ---
+     * default: json
+     * options:
+     *   - json
+     * ---
+     */
+    public function liveconfig($args, $assoc_args)
+    {
+        $format = $assoc_args['format'] ?? 'json';
+
+        if ('json' !== $format) {
+            WP_CLI::error('Unsupported format. Only json is currently supported.');
+        }
+
+        $json = wp_json_encode(
+            wasmer_get_liveconfig_data(),
+            JSON_UNESCAPED_SLASHES
+        );
+
+        if (false === $json) {
+            WP_CLI::error('Failed to encode liveconfig output as JSON.');
+        }
+
+        WP_CLI::line($json);
+    }
+}
+
 class Wasmer_Aio_Install_Command
 {
     /**
@@ -44,4 +80,5 @@ class Wasmer_Aio_Install_Command
     }
 }
 
+WP_CLI::add_command('wasmer', 'Wasmer_Command');
 WP_CLI::add_command('wasmer-aio-install', 'Wasmer_Aio_Install_Command');

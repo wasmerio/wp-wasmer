@@ -34,6 +34,30 @@ function wasmer_get_liveconfig_data()
     $update_themes = get_site_transient('update_themes');
     $update_core = get_site_transient('update_core');
 
+    if (!is_object($update_plugins)) {
+        $update_plugins = (object) [
+            'response' => [],
+            'no_update' => [],
+        ];
+    } else {
+        $update_plugins->response = is_array($update_plugins->response ?? null) ? $update_plugins->response : [];
+        $update_plugins->no_update = is_array($update_plugins->no_update ?? null) ? $update_plugins->no_update : [];
+    }
+
+    if (!is_object($update_themes)) {
+        $update_themes = (object) [
+            'response' => [],
+            'no_update' => [],
+        ];
+    } else {
+        $update_themes->response = is_array($update_themes->response ?? null) ? $update_themes->response : [];
+        $update_themes->no_update = is_array($update_themes->no_update ?? null) ? $update_themes->no_update : [];
+    }
+
+    $update_core_updates = is_object($update_core) && is_array($update_core->updates ?? null)
+        ? $update_core->updates
+        : [];
+
     $plugins = array_map(function ($path, $plugin) use ($update_plugins) {
         $slug = dirname($path);
         if ($slug === '.') $slug = basename($path, '.php');
@@ -72,7 +96,7 @@ function wasmer_get_liveconfig_data()
         ],
         'wordpress' => [
             'version' => get_bloginfo('version'),
-            'latest_version' => $update_core->updates[0]->version ?? null,
+            'latest_version' => $update_core_updates[0]->version ?? null,
             'url' => home_url(),
             'language' => get_locale(),
             'timezone' => date_default_timezone_get(),
