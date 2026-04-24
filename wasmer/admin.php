@@ -269,6 +269,7 @@ function wasmer_get_active_64_bit_required_plugins() {
 
 function wasmer_dashboard_widget_display() {
     $dashboard_url = wasmer_app_dashboard_url(WASMER_APP_ID);
+    $wp_dashboard_url = $dashboard_url . "/settings/wordpress";
     $svg_icon = wasmer_icon();
     $wasmer_settings_url = wasmer_app_dashboard_wp_settings_url(WASMER_APP_ID);
     $claim_app_url = wasmer_claim_app_url(WASMER_APP_ID);
@@ -295,9 +296,9 @@ function wasmer_dashboard_widget_display() {
         </div>
     <?php endif; ?>
     <p>Manage this WordPress app from your Wasmer Control Panel.</p>
-    <p>Update settings like <code>wp-config.php</code> or <code>php.ini</code> in one place.</p>
+    <p>Update the WordPress and PHP version used, and the WordPress definitions in one place.</p>
     <p>
-        <a class="button button-primary" href="<?= esc_url($dashboard_url) ?>" rel="noopener noreferrer">
+        <a class="button button-primary" href="<?= esc_url($wp_dashboard_url) ?>" rel="noopener noreferrer">
             <?= $svg_icon ?> Open Wasmer Control Panel
         </a>
     </p>
