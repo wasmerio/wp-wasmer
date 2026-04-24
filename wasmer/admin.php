@@ -296,10 +296,10 @@ function wasmer_dashboard_widget_display() {
         </div>
     <?php endif; ?>
     <p>Manage this WordPress app from your Wasmer Control Panel.</p>
-    <p>Update the WordPress and PHP version used, and the WordPress definitions in one place.</p>
+    <p>Update the WordPress and PHP version used, and the WordPress definitions from the <a href="<?= esc_url($wp_dashboard_url) ?>" rel="noopener noreferrer">Wasmer WordPress Settings</a>.</p>
     <p>
-        <a class="button button-primary" href="<?= esc_url($wp_dashboard_url) ?>" rel="noopener noreferrer">
-            <?= $svg_icon ?> Open Wasmer Control Panel
+        <a class="button button-primary" href="<?= esc_url($dashboard_url) ?>" rel="noopener noreferrer">
+            <?= $svg_icon ?> Wasmer Control Panel
         </a>
     </p>
     <?php
