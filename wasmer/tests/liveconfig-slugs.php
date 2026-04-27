@@ -41,6 +41,11 @@ function get_plugins()
             'Version' => '1.0.0',
             'Description' => 'Folder plugin test.',
         ],
+        'network-plugin/network-plugin.php' => [
+            'Name' => 'Network Plugin',
+            'Version' => '1.0.0',
+            'Description' => 'Network active plugin test.',
+        ],
         'duplicate/primary.php' => [
             'Name' => 'Duplicate Primary',
             'Version' => '1.0.0',
@@ -54,6 +59,38 @@ function get_plugins()
     ];
 }
 
+function get_mu_plugins()
+{
+    return [
+        'mu-loader.php' => [
+            'Name' => 'MU Loader',
+            'Version' => '1.0.0',
+            'Description' => 'Must-use plugin test.',
+        ],
+    ];
+}
+
+function get_dropins()
+{
+    return [
+        'object-cache.php' => [
+            'Name' => 'Object Cache Drop-in',
+            'Version' => '',
+            'Description' => 'Drop-in plugin header description.',
+        ],
+    ];
+}
+
+function _get_dropins()
+{
+    return [
+        'object-cache.php' => [
+            'External object cache.',
+            true,
+        ],
+    ];
+}
+
 function wp_get_themes()
 {
     return [
@@ -63,6 +100,10 @@ function wp_get_themes()
         ],
         'child-theme' => (object) [
             'name' => 'Child Theme',
+            'version' => '1.0.0',
+        ],
+        'inactive-theme' => (object) [
+            'name' => 'Inactive Theme',
             'version' => '1.0.0',
         ],
     ];
@@ -102,6 +143,9 @@ function get_site_transient($key)
                 'child-theme' => [
                     'new_version' => '1.0.0',
                 ],
+                'inactive-theme' => [
+                    'new_version' => '1.0.0',
+                ],
             ],
         ];
     }
@@ -115,9 +159,32 @@ function get_site_transient($key)
     return null;
 }
 
+function get_site_option($key)
+{
+    if ($key === 'auto_update_plugins') {
+        return [
+            'folder-plugin/folder-plugin.php',
+            'network-plugin/network-plugin.php',
+        ];
+    }
+
+    if ($key === 'auto_update_themes') {
+        return [
+            'child-theme',
+        ];
+    }
+
+    return null;
+}
+
 function is_plugin_active($path)
 {
     return $path === 'folder-plugin/folder-plugin.php';
+}
+
+function is_plugin_active_for_network($path)
+{
+    return $path === 'network-plugin/network-plugin.php';
 }
 
 function get_bloginfo($show)
@@ -177,6 +244,11 @@ function get_stylesheet()
     return get_option('stylesheet');
 }
 
+function get_template()
+{
+    return get_option('template');
+}
+
 function assert_same($expected, $actual, $message)
 {
     if ($expected !== $actual) {
@@ -203,21 +275,68 @@ require_once __DIR__ . '/../rest-api.php';
 
 $data = wasmer_get_liveconfig_data();
 
-$hello = find_liveconfig_item($data['wordpress']['plugins'], 'name', 'Hello Dolly');
+$hello = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'Hello Dolly');
 assert_same('hello', $hello['slug'], 'Hello Dolly liveconfig slug should match wp plugin list --json name.');
+assert_same('hello', $hello['name'], 'Hello Dolly liveconfig name should match wp plugin list --json name.');
+assert_same('Hello Dolly', $hello['title'], 'Hello Dolly liveconfig title should keep the plugin display name.');
+assert_same('inactive', $hello['status'], 'Inactive plugin liveconfig status should match wp plugin list --json status.');
+assert_same('off', $hello['auto_update'], 'Disabled plugin auto-update status should match wp plugin list --json auto_update.');
 assert_same('https://wordpress.org/plugins/hello-dolly/', $hello['url'], 'Plugin update metadata should still come from the transient.');
 
-$folder_plugin = find_liveconfig_item($data['wordpress']['plugins'], 'name', 'Folder Plugin');
+$folder_plugin = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'Folder Plugin');
 assert_same('folder-plugin', $folder_plugin['slug'], 'Folder plugin liveconfig slug should match wp plugin list --json name.');
+assert_same('folder-plugin', $folder_plugin['name'], 'Folder plugin liveconfig name should match wp plugin list --json name.');
+assert_same('Folder Plugin', $folder_plugin['title'], 'Folder plugin liveconfig title should keep the plugin display name.');
+assert_same('active', $folder_plugin['status'], 'Active plugin liveconfig status should match wp plugin list --json status.');
+assert_same('on', $folder_plugin['auto_update'], 'Enabled plugin auto-update status should match wp plugin list --json auto_update.');
 
-$duplicate_primary = find_liveconfig_item($data['wordpress']['plugins'], 'name', 'Duplicate Primary');
-$duplicate_secondary = find_liveconfig_item($data['wordpress']['plugins'], 'name', 'Duplicate Secondary');
+$network_plugin = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'Network Plugin');
+assert_same('network-plugin', $network_plugin['name'], 'Network plugin liveconfig name should match wp plugin list --json name.');
+assert_same('Network Plugin', $network_plugin['title'], 'Network plugin liveconfig title should keep the plugin display name.');
+assert_same('active-network', $network_plugin['status'], 'Network active plugin liveconfig status should match wp plugin list --json status.');
+assert_same('on', $network_plugin['auto_update'], 'Network active plugin auto-update status should match wp plugin list --json auto_update.');
+assert_same(true, $network_plugin['is_active'], 'Network active plugin should keep the legacy is_active flag true.');
+
+$mu_plugin = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'MU Loader');
+assert_same('mu-loader', $mu_plugin['slug'], 'Must-use plugin liveconfig slug should match wp plugin list --json name.');
+assert_same('mu-loader', $mu_plugin['name'], 'Must-use plugin liveconfig name should match wp plugin list --json name.');
+assert_same('MU Loader', $mu_plugin['title'], 'Must-use plugin liveconfig title should keep the plugin display name.');
+assert_same('must-use', $mu_plugin['status'], 'Must-use plugin liveconfig status should match wp plugin list --json status.');
+assert_same('off', $mu_plugin['auto_update'], 'Must-use plugin auto-update status should match wp plugin list --json auto_update.');
+assert_same(true, $mu_plugin['is_active'], 'Must-use plugin should keep the legacy is_active flag true.');
+
+$dropin = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'Object Cache Drop-in');
+assert_same('object-cache.php', $dropin['slug'], 'Drop-in liveconfig slug should match wp plugin list --json name.');
+assert_same('object-cache.php', $dropin['name'], 'Drop-in liveconfig name should match wp plugin list --json name.');
+assert_same('Object Cache Drop-in', $dropin['title'], 'Drop-in liveconfig title should keep the plugin display name.');
+assert_same('dropin', $dropin['status'], 'Drop-in liveconfig status should match wp plugin list --json status.');
+assert_same('off', $dropin['auto_update'], 'Drop-in auto-update status should match wp plugin list --json auto_update.');
+assert_same('External object cache.', $dropin['description'], 'Drop-in liveconfig description should use WordPress drop-in metadata.');
+assert_same(true, $dropin['is_active'], 'Drop-in should keep the legacy is_active flag true.');
+
+$duplicate_primary = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'Duplicate Primary');
+$duplicate_secondary = find_liveconfig_item($data['wordpress']['plugins'], 'title', 'Duplicate Secondary');
 assert_same('duplicate/primary', $duplicate_primary['slug'], 'Duplicate plugin slug should fall back to the path-like WP-CLI name.');
 assert_same('duplicate/secondary', $duplicate_secondary['slug'], 'Duplicate plugin slug should fall back to the path-like WP-CLI name.');
+assert_same('duplicate/primary', $duplicate_primary['name'], 'Duplicate plugin name should fall back to the path-like WP-CLI name.');
+assert_same('duplicate/secondary', $duplicate_secondary['name'], 'Duplicate plugin name should fall back to the path-like WP-CLI name.');
 
 $parent_theme = find_liveconfig_item($data['wordpress']['themes'], 'slug', 'parent-theme');
 $child_theme = find_liveconfig_item($data['wordpress']['themes'], 'slug', 'child-theme');
+$inactive_theme = find_liveconfig_item($data['wordpress']['themes'], 'slug', 'inactive-theme');
 assert_same(false, $parent_theme['is_active'], 'Parent theme should not be marked active when a child theme is active.');
 assert_same(true, $child_theme['is_active'], 'Active child theme should match wp theme list --json active status.');
+assert_same('parent', $parent_theme['status'], 'Parent theme liveconfig status should match wp theme list --json status.');
+assert_same('active', $child_theme['status'], 'Active theme liveconfig status should match wp theme list --json status.');
+assert_same('inactive', $inactive_theme['status'], 'Inactive theme liveconfig status should match wp theme list --json status.');
+assert_same('parent-theme', $parent_theme['name'], 'Parent theme liveconfig name should match wp theme list --json name.');
+assert_same('child-theme', $child_theme['name'], 'Active theme liveconfig name should match wp theme list --json name.');
+assert_same('inactive-theme', $inactive_theme['name'], 'Inactive theme liveconfig name should match wp theme list --json name.');
+assert_same('Parent Theme', $parent_theme['title'], 'Parent theme liveconfig title should keep the theme display name.');
+assert_same('Child Theme', $child_theme['title'], 'Active theme liveconfig title should keep the theme display name.');
+assert_same('Inactive Theme', $inactive_theme['title'], 'Inactive theme liveconfig title should keep the theme display name.');
+assert_same('off', $parent_theme['auto_update'], 'Disabled parent theme auto-update status should match wp theme list --json auto_update.');
+assert_same('on', $child_theme['auto_update'], 'Enabled theme auto-update status should match wp theme list --json auto_update.');
+assert_same('off', $inactive_theme['auto_update'], 'Disabled inactive theme auto-update status should match wp theme list --json auto_update.');
 
 echo "ok\n";
