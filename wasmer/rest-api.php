@@ -6,6 +6,46 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/defines.php';
 
+function wasmer_get_plugin_slug_from_path($path)
+{
+    $slug = dirname($path);
+    if ($slug === '.') {
+        $slug = basename($path, '.php');
+    }
+
+    return $slug;
+}
+
+function wasmer_get_plugin_slugs_from_paths($paths)
+{
+    // WP-CLI's plugin "name" field is derived from the installed plugin path,
+    // not from the wordpress.org update API slug. When multiple plugin files
+    // collapse to the same slug, WP-CLI falls back to the path without .php.
+    $slugs = [];
+    $duplicates = [];
+
+    foreach ($paths as $path) {
+        $slug = wasmer_get_plugin_slug_from_path($path);
+        $slugs[$path] = $slug;
+        if (!isset($duplicates[$slug])) {
+            $duplicates[$slug] = [];
+        }
+        $duplicates[$slug][] = $path;
+    }
+
+    foreach ($duplicates as $paths_for_slug) {
+        if (count($paths_for_slug) <= 1) {
+            continue;
+        }
+
+        foreach ($paths_for_slug as $path) {
+            $slugs[$path] = preg_replace('/\.php$/', '', $path);
+        }
+    }
+
+    return $slugs;
+}
+
 function wasmer_get_liveconfig_data()
 {
     global $wpdb;
@@ -58,12 +98,13 @@ function wasmer_get_liveconfig_data()
         ? $update_core->updates
         : [];
 
-    $plugins = array_map(function ($path, $plugin) use ($update_plugins) {
-        $slug = dirname($path);
-        if ($slug === '.') $slug = basename($path, '.php');
+    $plugin_slugs = wasmer_get_plugin_slugs_from_paths(array_keys($plugins));
+
+    $plugins = array_map(function ($path, $plugin) use ($update_plugins, $plugin_slugs) {
+        $slug = $plugin_slugs[$path];
         $transient = $update_plugins->response[$path] ?? $update_plugins->no_update[$path] ?? null;
         return [
-            'slug' => $transient->slug ?? $slug,
+            'slug' => $slug,
             'icon' => $transient->icons['1x'] ?? null,
             'url' => $transient->url ?? null,
             'name' => $plugin['Name'],
@@ -74,14 +115,16 @@ function wasmer_get_liveconfig_data()
         ];
     }, array_keys($plugins), $plugins);
 
-    $themes = array_map(function ($slug, $theme) use ($update_themes) {
+    $active_theme_slug = function_exists('get_stylesheet') ? get_stylesheet() : get_option('stylesheet');
+
+    $themes = array_map(function ($slug, $theme) use ($update_themes, $active_theme_slug) {
         $transient = $update_themes->response[$slug] ?? $update_themes->no_update[$slug] ?? null;
         return [
             'slug' => $slug,
             'name' => $theme->name,
             'version' => $theme->version,
             'latest_version' => $transient["new_version"] ?? null,
-            'is_active' => get_option('template') == $slug,
+            'is_active' => $active_theme_slug == $slug,
         ];
     }, array_keys($themes), $themes);
 

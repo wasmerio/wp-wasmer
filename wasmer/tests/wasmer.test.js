@@ -338,7 +338,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           //     is_active: false,
           //     latest_version: "1.7.2",
           //     name: "Hello Dolly",
-          //     slug: "hello-dolly",
+          //     slug: "hello",
           //     url: "https://wordpress.org/plugins/hello-dolly/",
           //     version: "1.7.2",
           //   },
@@ -399,6 +399,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
   });
 
   describe("WP-CLI", () => {
+    it("uses WP-CLI extension names for liveconfig slugs", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/liveconfig-slugs.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
+    });
+
     it("registers wasmer liveconfig", () => {
       const req = spawnSync(
         "node",
