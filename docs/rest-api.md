@@ -80,6 +80,45 @@ Important `wordpress` fields include:
 - `posts`
 - `pages`
 
+### Plugin And Theme Entries
+
+`wordpress.plugins` includes regular plugins, must-use plugins, and WordPress drop-ins. Plugin identity fields are aligned with `wp plugin list --json`:
+
+- `name`
+  WP-CLI-style plugin identifier, such as `hello`, `akismet`, `wp-wasmer`, or `object-cache.php` for a drop-in.
+- `slug`
+  Compatibility alias for the same identifier. If multiple plugin files resolve to the same folder slug, this falls back to the path-like WP-CLI name, such as `folder/plugin-file`.
+- `title`
+  Human-readable plugin title from the plugin header, such as `Hello Dolly`.
+- `status`
+  One of `active`, `active-network`, `inactive`, `must-use`, or `dropin`.
+- `auto_update`
+  `on` or `off`, matching `wp plugin list --json`.
+- `version`
+- `latest_version`
+- `description`
+- `is_active`
+  Legacy boolean convenience field. This is `true` for `active`, `active-network`, `must-use`, and `dropin` entries.
+- `icon`
+- `url`
+
+`wordpress.themes` uses the same identity convention as `wp theme list --json`:
+
+- `name`
+  Theme stylesheet slug, such as `twentytwentyfour`.
+- `slug`
+  Compatibility alias for the theme stylesheet slug.
+- `title`
+  Human-readable theme title, such as `Twenty Twenty-Four`.
+- `status`
+  One of `active`, `parent`, or `inactive`.
+- `auto_update`
+  `on` or `off`, matching `wp theme list --json`.
+- `version`
+- `latest_version`
+- `is_active`
+  Legacy boolean convenience field. This is only `true` for the active stylesheet theme.
+
 This endpoint does not require Wasmer-specific environment variables. It derives its data from the running WordPress installation and the current plugin constants.
 
 See [Wasmer integration](wasmer-integration.md#how-wasmer-uses-liveconfig) for how Wasmer consumes this payload in the dashboard and WordPress settings flow.

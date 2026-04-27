@@ -32,10 +32,12 @@ The visible values in the example below are typical `liveconfig`-driven fields e
 
 - PHP version
 - WordPress version
-- plugin count
+- plugin count, including regular plugins, must-use plugins, and drop-ins
 - theme count
 - user count
 - post count
+
+Plugin and theme entries use WP-CLI-style identifiers in `name` and preserve the human-readable label in `title`. Their `status` and `auto_update` fields mirror the values returned by `wp plugin list --json` and `wp theme list --json`.
 
 ![Wasmer dashboard overview showing the liveconfig-powered WordPress summary card and WordPress settings link](images/wp-wasmer-liveconfig.png)
 
