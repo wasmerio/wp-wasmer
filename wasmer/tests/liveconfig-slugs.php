@@ -5,7 +5,7 @@ define('WP_DEBUG', false);
 define('WP_DEBUG_LOG', false);
 
 if (!defined('WP_WASMER_PLUGIN_VERSION')) {
-    define('WP_WASMER_PLUGIN_VERSION', '0.3.2');
+    define('WP_WASMER_PLUGIN_VERSION', '0.4.0');
 }
 
 if (!defined('WP_WASMER_PLUGIN_DIR_PATH')) {
