@@ -6,6 +6,108 @@ if (!defined('ABSPATH')) {
 
 require_once __DIR__ . '/defines.php';
 
+function wasmer_get_plugin_slug_from_path($path)
+{
+    $slug = dirname($path);
+    if ($slug === '.') {
+        $slug = basename($path, '.php');
+    }
+
+    return $slug;
+}
+
+function wasmer_get_plugin_slugs_from_paths($paths)
+{
+    // WP-CLI's plugin "name" field is derived from the installed plugin path,
+    // not from the wordpress.org update API slug. When multiple plugin files
+    // collapse to the same slug, WP-CLI falls back to the path without .php.
+    $slugs = [];
+    $duplicates = [];
+
+    foreach ($paths as $path) {
+        $slug = wasmer_get_plugin_slug_from_path($path);
+        $slugs[$path] = $slug;
+        if (!isset($duplicates[$slug])) {
+            $duplicates[$slug] = [];
+        }
+        $duplicates[$slug][] = $path;
+    }
+
+    foreach ($duplicates as $paths_for_slug) {
+        if (count($paths_for_slug) <= 1) {
+            continue;
+        }
+
+        foreach ($paths_for_slug as $path) {
+            $slugs[$path] = preg_replace('/\.php$/', '', $path);
+        }
+    }
+
+    return $slugs;
+}
+
+function wasmer_get_plugin_status($path)
+{
+    if (function_exists('is_plugin_active_for_network') && is_plugin_active_for_network($path)) {
+        return 'active-network';
+    }
+
+    if (is_plugin_active($path)) {
+        return 'active';
+    }
+
+    return 'inactive';
+}
+
+function wasmer_get_theme_status($slug, $active_theme_slug, $active_theme_template_slug)
+{
+    if ($active_theme_slug == $slug) {
+        return 'active';
+    }
+
+    if ($active_theme_template_slug == $slug) {
+        return 'parent';
+    }
+
+    return 'inactive';
+}
+
+function wasmer_get_mu_plugin_liveconfig($path, $plugin)
+{
+    $slug = wasmer_get_plugin_slug_from_path($path);
+
+    return [
+        'slug' => $slug,
+        'status' => 'must-use',
+        'auto_update' => 'off',
+        'icon' => null,
+        'url' => null,
+        'name' => $slug,
+        'title' => $plugin['Name'] ?? $plugin['Title'] ?? $path,
+        'version' => $plugin['Version'] ?? '',
+        'description' => $plugin['Description'] ?? '',
+        'is_active' => true,
+        'latest_version' => null,
+    ];
+}
+
+function wasmer_get_dropin_liveconfig($path, $plugin, $dropin_descriptions)
+{
+    return [
+        'slug' => $path,
+        'status' => 'dropin',
+        'auto_update' => 'off',
+        'icon' => null,
+        'url' => null,
+        'name' => $path,
+        'title' => $plugin['Name'] ?? $plugin['Title'] ?? $path,
+        'version' => $plugin['Version'] ?? '',
+        'description' => $dropin_descriptions[$path][0] ?? $plugin['Description'] ?? '',
+        'is_active' => true,
+        'latest_version' => null,
+    ];
+}
+
 function wasmer_get_liveconfig_data()
 {
     global $wpdb;
@@ -29,10 +131,23 @@ function wasmer_get_liveconfig_data()
     }
 
     $plugins = get_plugins();
+    $mu_plugins = function_exists('get_mu_plugins') ? get_mu_plugins() : [];
+    $dropins = function_exists('get_dropins') ? get_dropins() : [];
+    $dropin_descriptions = function_exists('_get_dropins') ? _get_dropins() : [];
     $themes = wp_get_themes();
+    $auto_update_plugins = get_site_option('auto_update_plugins');
+    $auto_update_themes = get_site_option('auto_update_themes');
     $update_plugins = get_site_transient('update_plugins');
     $update_themes = get_site_transient('update_themes');
     $update_core = get_site_transient('update_core');
+
+    if (!is_array($auto_update_plugins)) {
+        $auto_update_plugins = [];
+    }
+
+    if (!is_array($auto_update_themes)) {
+        $auto_update_themes = [];
+    }
 
     if (!is_object($update_plugins)) {
         $update_plugins = (object) [
@@ -58,30 +173,52 @@ function wasmer_get_liveconfig_data()
         ? $update_core->updates
         : [];
 
-    $plugins = array_map(function ($path, $plugin) use ($update_plugins) {
-        $slug = dirname($path);
-        if ($slug === '.') $slug = basename($path, '.php');
+    $plugin_slugs = wasmer_get_plugin_slugs_from_paths(array_keys($plugins));
+
+    $plugins = array_map(function ($path, $plugin) use ($update_plugins, $plugin_slugs, $auto_update_plugins) {
+        $slug = $plugin_slugs[$path];
+        $status = wasmer_get_plugin_status($path);
         $transient = $update_plugins->response[$path] ?? $update_plugins->no_update[$path] ?? null;
         return [
-            'slug' => $transient->slug ?? $slug,
+            'slug' => $slug,
+            'status' => $status,
+            'auto_update' => in_array($path, $auto_update_plugins, true) ? 'on' : 'off',
             'icon' => $transient->icons['1x'] ?? null,
             'url' => $transient->url ?? null,
-            'name' => $plugin['Name'],
+            'name' => $slug,
+            'title' => $plugin['Name'],
             'version' => $plugin['Version'] ?? '',
             'description' => $plugin['Description'],
-            'is_active' => is_plugin_active($path),
+            'is_active' => $status === 'active' || $status === 'active-network',
             'latest_version' => $transient->new_version ?? null,
         ];
     }, array_keys($plugins), $plugins);
 
-    $themes = array_map(function ($slug, $theme) use ($update_themes) {
+    $mu_plugins = array_map(function ($path, $plugin) {
+        return wasmer_get_mu_plugin_liveconfig($path, $plugin);
+    }, array_keys($mu_plugins), $mu_plugins);
+
+    $dropins = array_map(function ($path, $plugin) use ($dropin_descriptions) {
+        return wasmer_get_dropin_liveconfig($path, $plugin, $dropin_descriptions);
+    }, array_keys($dropins), $dropins);
+
+    $plugins = array_merge($plugins, $mu_plugins, $dropins);
+
+    $active_theme_slug = function_exists('get_stylesheet') ? get_stylesheet() : get_option('stylesheet');
+    $active_theme_template_slug = function_exists('get_template') ? get_template() : get_option('template');
+
+    $themes = array_map(function ($slug, $theme) use ($update_themes, $auto_update_themes, $active_theme_slug, $active_theme_template_slug) {
+        $status = wasmer_get_theme_status($slug, $active_theme_slug, $active_theme_template_slug);
         $transient = $update_themes->response[$slug] ?? $update_themes->no_update[$slug] ?? null;
         return [
             'slug' => $slug,
-            'name' => $theme->name,
+            'status' => $status,
+            'auto_update' => in_array($slug, $auto_update_themes, true) ? 'on' : 'off',
+            'name' => $slug,
+            'title' => $theme->name,
             'version' => $theme->version,
             'latest_version' => $transient["new_version"] ?? null,
-            'is_active' => get_option('template') == $slug,
+            'is_active' => $status === 'active',
         ];
     }, array_keys($themes), $themes);
 
@@ -108,6 +245,7 @@ function wasmer_get_liveconfig_data()
             'users' => [
                 'total' => $user_count['total_users'],
                 'admins' => $user_count['avail_roles']['administrator'] ?? 0,
+                'main_admin_id' => wasmer_get_user_id(""),
             ],
             'posts' => ['count' => wp_count_posts('post')->publish],
             'pages' => ['count' => wp_count_posts('page')->publish],

@@ -27,6 +27,8 @@ Behavior:
 
 - The command calls the same `wasmer_get_liveconfig_data()` helper used by the REST endpoint.
 - Output is emitted as JSON to standard output.
+- `wordpress.plugins[].name` and `wordpress.themes[].name` use the same identifier convention as `wp plugin list --json` and `wp theme list --json`.
+- Plugin and theme display labels are available as `title`.
 - Any format other than `json` returns a WP-CLI error.
 
 ## `wp wasmer-aio-install install`

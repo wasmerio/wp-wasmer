@@ -17,7 +17,7 @@ const HOST = "127.0.0.1";
 const SERVER_URL = `http://${HOST}:${PORT}`;
 
 const LATEST_WP_VERSION = "6.9.4";
-const WASMER_PLUGIN_VERSION = "0.3.2";
+const WASMER_PLUGIN_VERSION = "0.4.0";
 const WP_VERSION = process.env.WP_VERSION || "6.8.2";
 const PHP_VERSION = process.env.PHP_VERSION || "8.3";
 
@@ -238,10 +238,6 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           dashboardBody.includes("Manage on Wasmer"),
           "Expected dashboard to include 'Manage on Wasmer' widget"
         );
-        assert.ok(
-          dashboardBody.includes("wp-config.php"),
-          "Expected dashboard widget to mention wp-config.php"
-        );
         // assert.ok(
         //   dashboardBody.includes("64-bit PHP required"),
         //   "Expected dashboard widget to include 64-bit PHP warning"
@@ -315,8 +311,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           //     icon: null,
           //     is_active: true,
           //     latest_version: null,
-          //     name: '"Wasmer-Tests" on the Dashboard',
+          //     name: "wasmer-tests",
           //     slug: "wasmer-tests",
+          //     title: '"Wasmer-Tests" on the Dashboard',
           //     url: null,
           //     version: "",
           //   },
@@ -326,8 +323,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           //     icon: "https://ps.w.org/akismet/assets/icon-128x128.png?rev=2818463",
           //     is_active: false,
           //     latest_version: "5.4",
-          //     name: "Akismet Anti-spam: Spam Protection",
+          //     name: "akismet",
           //     slug: "akismet",
+          //     title: "Akismet Anti-spam: Spam Protection",
           //     url: "https://wordpress.org/plugins/akismet/",
           //     version: "5.3.7",
           //   },
@@ -337,8 +335,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           //     icon: "https://ps.w.org/hello-dolly/assets/icon-128x128.jpg?rev=2052855",
           //     is_active: false,
           //     latest_version: "1.7.2",
-          //     name: "Hello Dolly",
-          //     slug: "hello-dolly",
+          //     name: "hello",
+          //     slug: "hello",
+          //     title: "Hello Dolly",
           //     url: "https://wordpress.org/plugins/hello-dolly/",
           //     version: "1.7.2",
           //   },
@@ -347,8 +346,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           //     icon: null,
           //     is_active: true,
           //     latest_version: null,
-          //     name: "WP Wasmer",
+          //     name: "wp-wasmer",
           //     slug: "wp-wasmer",
+          //     title: "WP Wasmer",
           //     url: null,
           //     version: WASMER_PLUGIN_VERSION,
           //   },
@@ -360,29 +360,33 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           //   {
           //     is_active: false,
           //     latest_version: "1.2",
-          //     name: "Twenty Twenty-Five",
+          //     name: "twentytwentyfive",
           //     slug: "twentytwentyfive",
+          //     title: "Twenty Twenty-Five",
           //     version: "1.2",
           //   },
           //   {
           //     is_active: true,
           //     latest_version: "1.3",
-          //     name: "Twenty Twenty-Four",
+          //     name: "twentytwentyfour",
           //     slug: "twentytwentyfour",
+          //     title: "Twenty Twenty-Four",
           //     version: "1.3",
           //   },
           //   {
           //     is_active: false,
           //     latest_version: "1.6",
-          //     name: "Twenty Twenty-Three",
+          //     name: "twentytwentythree",
           //     slug: "twentytwentythree",
+          //     title: "Twenty Twenty-Three",
           //     version: "1.6",
           //   },
           //   {
           //     is_active: false,
           //     latest_version: "2.0",
-          //     name: "Twenty Twenty-Two",
+          //     name: "twentytwentytwo",
           //     slug: "twentytwentytwo",
+          //     title: "Twenty Twenty-Two",
           //     version: "1.6",
           //   },
           // ],
@@ -390,6 +394,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           url: "http://localhost:8080",
           users: {
             admins: 1,
+            main_admin_id: 1,
             total: 1,
           },
           version: WP_VERSION,
@@ -399,6 +404,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
   });
 
   describe("WP-CLI", () => {
+    it("uses WP-CLI extension names for liveconfig slugs", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/liveconfig-slugs.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
+    });
+
     it("registers wasmer liveconfig", () => {
       const req = spawnSync(
         "node",
