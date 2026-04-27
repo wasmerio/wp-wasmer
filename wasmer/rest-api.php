@@ -245,7 +245,7 @@ function wasmer_get_liveconfig_data()
             'users' => [
                 'total' => $user_count['total_users'],
                 'admins' => $user_count['avail_roles']['administrator'] ?? 0,
-                'main_admin' => wasmer_get_user_id(""),
+                'main_admin_id' => wasmer_get_user_id(""),
             ],
             'posts' => ['count' => wp_count_posts('post')->publish],
             'pages' => ['count' => wp_count_posts('page')->publish],

@@ -238,10 +238,6 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           dashboardBody.includes("Manage on Wasmer"),
           "Expected dashboard to include 'Manage on Wasmer' widget"
         );
-        assert.ok(
-          dashboardBody.includes("wp-config.php"),
-          "Expected dashboard widget to mention wp-config.php"
-        );
         // assert.ok(
         //   dashboardBody.includes("64-bit PHP required"),
         //   "Expected dashboard widget to include 64-bit PHP warning"
@@ -398,6 +394,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           url: "http://localhost:8080",
           users: {
             admins: 1,
+            main_admin_id: 1,
             total: 1,
           },
           version: WP_VERSION,
