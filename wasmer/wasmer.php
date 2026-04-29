@@ -29,12 +29,6 @@ if (WASMER_CLI) {
   include_once __DIR__ . '/wp-cli.php';
 }
 
-// Disable automatic theme updates
-add_filter('auto_update_theme', '__return_false');
-
-// Disable automatic plugin updates
-add_filter('auto_update_plugin', '__return_false');
-
 // function dbg_var_dump($a, $var)
 //     {
 //         ob_start();
@@ -100,20 +94,21 @@ function wasmer_plugin_deactivate()
  * @param mixed $result WP_Error if authentication error, null if authentication
  *                      method wasn't used, true if authentication succeeded.
  */
-function wasmer_bypass_rest_api_auth_errors( $result ) {
+function wasmer_bypass_rest_api_auth_errors($result)
+{
 
   // Skip if request is authenticated
   if (!empty($result)) {
-      return $result;
+    return $result;
   }
 
   if (str_starts_with($_GET['rest_route'], '/wasmer/v1/')) {
-      return true;
+    return true;
   }
 
   return null;
 }
-add_filter( 'rest_authentication_errors', 'wasmer_bypass_rest_api_auth_errors', 20 );
+add_filter('rest_authentication_errors', 'wasmer_bypass_rest_api_auth_errors', 20);
 
 
 /* -------------------------------------------------------------------------
@@ -220,6 +215,38 @@ add_action('admin_notices', 'wasmer_dcu_admin_notice', 1);
  * ---------------------------------------------------------------------- */
 
 // Enforce .htaccess support if server is phpix
-if ( PHP_SAPI === 'phpix' ) {
+if (PHP_SAPI === 'phpix') {
   add_filter('got_rewrite', '__return_true');
+}
+
+
+/* -------------------------------------------------------------------------
+ *  Improve the WordPress site status page to indicate that WordPress core updates are managed by the host
+ * ---------------------------------------------------------------------- */
+
+// Add a test to the site status page to indicate that WordPress core updates are managed by the host
+add_filter('site_status_tests', function ($tests) {
+  if (isset($tests['direct']['background_updates'])) {
+    $tests['direct']['background_updates']['test'] = 'wasmer_host_managed_background_updates';
+  }
+
+  return $tests;
+});
+
+function wasmer_host_managed_background_updates()
+{
+  return array(
+    'label'       => __('WordPress updates are managed by the host'),
+    'status'      => 'good', // good | recommended | critical
+    'badge'       => array(
+      'label' => __('Security'),
+      'color' => 'blue',
+    ),
+    'description' => sprintf(
+      '<p>%s</p>',
+      __('Core background updates are intentionally disabled because WordPress core updates are applied by the hosting platform.')
+    ),
+    'actions'     => '',
+    'test'        => 'background_updates',
+  );
 }
