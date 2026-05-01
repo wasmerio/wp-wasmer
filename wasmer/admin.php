@@ -73,6 +73,10 @@ function get_perishable_time_left() {
 }
 
 function wasmer_add_top_bar_menu($admin_bar) {
+    if (!is_user_logged_in() || !is_admin()) {
+        return;
+    }
+
     // Calculate time left based on WASMER_PERISHABLE_TIMESTAMP
     $notification_preview = '';
     $notification_html = '';

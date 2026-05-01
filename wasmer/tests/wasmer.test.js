@@ -403,6 +403,26 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
     });
   });
 
+  describe("Admin bar", () => {
+    it("only registers the Wasmer admin bar menu for logged-in admin pages", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/admin-bar-menu.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
+    });
+  });
+
   describe("WP-CLI", () => {
     it("uses WP-CLI extension names for liveconfig slugs", () => {
       const req = spawnSync(
