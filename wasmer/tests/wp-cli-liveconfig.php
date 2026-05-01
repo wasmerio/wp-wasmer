@@ -4,7 +4,7 @@ define('ABSPATH', __DIR__ . '/');
 define('WP_CLI', true);
 
 if (!defined('WP_WASMER_PLUGIN_VERSION')) {
-    define('WP_WASMER_PLUGIN_VERSION', '0.4.0');
+    define('WP_WASMER_PLUGIN_VERSION', '0.4.2');
 }
 
 if (!defined('WP_WASMER_PLUGIN_DIR_PATH')) {
