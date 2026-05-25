@@ -102,7 +102,7 @@ function wasmer_bypass_rest_api_auth_errors($result)
     return $result;
   }
 
-  if (str_starts_with($_GET['rest_route'], '/wasmer/v1/')) {
+  if (str_starts_with(get_query_var('rest_route'), '/wasmer/v1/')) {
     return true;
   }
 
