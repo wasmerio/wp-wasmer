@@ -1,0 +1,1 @@
+CREATE DATABASE IF NOT EXISTS target_wp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

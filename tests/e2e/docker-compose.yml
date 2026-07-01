@@ -1,0 +1,108 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_DATABASE: source_wp
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -pwordpress --silent"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+
+  source:
+    image: wordpress:${WP_VERSION:-6.8.2}-php${PHP_VERSION:-8.3}-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: source_wp
+      WP_ADDITIONAL_CONFIG: /var/www/html/wp-content/wp-config-extra.php
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        if (getenv('WP_ADDITIONAL_CONFIG') && file_exists(getenv('WP_ADDITIONAL_CONFIG'))) {
+          require getenv('WP_ADDITIONAL_CONFIG');
+        }
+    volumes:
+      - source-wp:/var/www/html
+      - ../../wasmer-migrate:/var/www/html/wp-content/plugins/wasmer-migrate:ro
+      - .:/e2e:ro
+
+  target:
+    image: wordpress:${WP_VERSION:-6.8.2}-php${PHP_VERSION:-8.3}-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: target_wp
+      WP_ADDITIONAL_CONFIG: /var/www/html/wp-content/wp-config-extra.php
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        if (getenv('WP_ADDITIONAL_CONFIG') && file_exists(getenv('WP_ADDITIONAL_CONFIG'))) {
+          require getenv('WP_ADDITIONAL_CONFIG');
+        }
+      WASMER_APP_ID: local-e2e-app
+      WASMER_WEBSITE_URL: http://wasmer.test
+    volumes:
+      - target-wp:/var/www/html
+      - ../..:/var/www/html/wp-content/plugins/wp-wasmer:ro
+      - .:/e2e:ro
+
+  source-cli:
+    image: wordpress:cli-php${PHP_VERSION:-8.3}
+    depends_on:
+      db:
+        condition: service_healthy
+      source:
+        condition: service_started
+    user: "33:33"
+    working_dir: /var/www/html
+    entrypoint: ["wp"]
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: source_wp
+      WP_ADDITIONAL_CONFIG: /var/www/html/wp-content/wp-config-extra.php
+    volumes:
+      - source-wp:/var/www/html
+      - ../../wasmer-migrate:/var/www/html/wp-content/plugins/wasmer-migrate:ro
+      - .:/e2e:ro
+
+  target-cli:
+    image: wordpress:cli-php${PHP_VERSION:-8.3}
+    depends_on:
+      db:
+        condition: service_healthy
+      target:
+        condition: service_started
+    user: "33:33"
+    working_dir: /var/www/html
+    entrypoint: ["wp"]
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: target_wp
+      WP_ADDITIONAL_CONFIG: /var/www/html/wp-content/wp-config-extra.php
+      WASMER_APP_ID: local-e2e-app
+      WASMER_WEBSITE_URL: http://wasmer.test
+    volumes:
+      - target-wp:/var/www/html
+      - ../..:/var/www/html/wp-content/plugins/wp-wasmer:ro
+      - .:/e2e:ro
+
+volumes:
+  db-data:
+  source-wp:
+  target-wp:

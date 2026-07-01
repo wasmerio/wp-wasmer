@@ -146,7 +146,7 @@ function wasmer_add_admin_menu() {
         'wasmer-dashboard', // Menu slug
         'wasmer_dashboard_page', // Callback function
         $svg_icon,  // Icon (dashicons or URL to a custom icon)
-        0                   // Position in menu
+        2.1                 // Position after Dashboard
     );
 
     add_submenu_page(
@@ -259,7 +259,7 @@ function wasmer_get_active_64_bit_required_plugins() {
         foreach ($required as $required_plugin) {
             $slug_match = $slug === $required_plugin['slug']
                 || $path === $required_plugin['slug']
-                || str_starts_with($path, $required_plugin['slug'] . '/');
+                || strpos($path, $required_plugin['slug'] . '/') === 0;
             $name_match = in_array($name, $required_plugin['names'], true);
             if ($slug_match || $name_match) {
                 $matches[] = $required_plugin['label'];

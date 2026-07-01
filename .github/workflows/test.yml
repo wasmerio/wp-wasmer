@@ -42,4 +42,36 @@ jobs:
 
     - name: Run tests
       working-directory: wasmer/tests
-      run: pnpm test 
+      run: pnpm test
+
+  migration-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wp-version: '6.8.2'
+            php-version: '8.3'
+          - wp-version: '6.7.2'
+            php-version: '8.2'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run migration E2E
+      env:
+        WP_VERSION: ${{ matrix.wp-version }}
+        PHP_VERSION: ${{ matrix.php-version }}
+        WP_WASMER_E2E_PROJECT: wp-wasmer-migration-e2e-${{ matrix.wp-version }}-php${{ matrix.php-version }}
+      run: tests/e2e/run-migration-e2e.sh
+
+    - name: Dump Docker logs on failure
+      if: failure()
+      run: |
+        docker compose -p wp-wasmer-migration-e2e-${{ matrix.wp-version }}-php${{ matrix.php-version }} -f tests/e2e/docker-compose.yml ps
+        docker compose -p wp-wasmer-migration-e2e-${{ matrix.wp-version }}-php${{ matrix.php-version }} -f tests/e2e/docker-compose.yml logs --no-color
+
+    - name: Cleanup migration E2E
+      if: always()
+      run: docker compose -p wp-wasmer-migration-e2e-${{ matrix.wp-version }}-php${{ matrix.php-version }} -f tests/e2e/docker-compose.yml down -v --remove-orphans

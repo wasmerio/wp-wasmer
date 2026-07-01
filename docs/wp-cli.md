@@ -55,3 +55,31 @@ Behavior:
 - Installs the theme language for all themes.
 
 This command is part of the current public CLI surface even though the newer `wasmer` namespace is the primary entrypoint for `liveconfig`.
+
+## Migration CLI Flow
+
+The WordPress admin migration screens create import sessions and show status, but they do not run long export, transfer, or import work in the browser request.
+The default transfer includes the database plus `wp-content/uploads`, `wp-content/themes`, and `wp-content/plugins`.
+
+Target site:
+
+```bash
+wp wasmer import session create --expires=2h
+wp wasmer import start <session_id>
+```
+
+Source site with the Wasmer Migrate plugin active:
+
+```bash
+wp wasmer-migrate connect '<import_code>'
+wp wasmer-migrate plan
+wp wasmer-migrate start
+```
+
+If a source transfer is interrupted, resume it with:
+
+```bash
+wp wasmer-migrate resume
+```
+
+Before the target import starts, `wp wasmer import start` checks the source manifest for the active source theme and active source plugins. If a future transfer omits those files and matching themes or plugins are missing on the destination, the command fails before applying the database import.
