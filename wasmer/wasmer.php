@@ -24,6 +24,9 @@ function wasmer_base_url()
 require_once __DIR__ . '/defines.php';
 require_once __DIR__ . '/rest-api.php';
 require_once __DIR__ . '/admin.php';
+require_once __DIR__ . '/migrate-import/rest-routes.php';
+require_once __DIR__ . '/migrate-import/admin-page.php';
+require_once __DIR__ . '/migrate-import/dashboard-panel.php';
 
 if (WASMER_CLI) {
   include_once __DIR__ . '/wp-cli.php';
@@ -68,11 +71,12 @@ add_action('rest_api_init', function () {
 });
 
 // Hook to add admin menu
-// add_action('admin_menu', 'wasmer_add_admin_menu');
+add_action('admin_menu', 'wasmer_add_admin_menu');
 // Hook to add a menu to the admin top bar
 add_action('admin_bar_menu', 'wasmer_add_top_bar_menu', 100);
 // Hook to add dashboard widget
 add_action('wp_dashboard_setup', 'wasmer_add_dashboard_widget');
+add_action('wp_dashboard_setup', 'wasmer_import_add_dashboard_panel');
 
 // Activation hook
 register_activation_hook(__FILE__, 'wasmer_plugin_activate');
@@ -102,7 +106,7 @@ function wasmer_bypass_rest_api_auth_errors($result)
     return $result;
   }
 
-  if (str_starts_with(get_query_var('rest_route'), '/wasmer/v1/')) {
+  if (strpos((string) get_query_var('rest_route'), '/wasmer/v1/') === 0) {
     return true;
   }
 
