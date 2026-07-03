@@ -8,6 +8,18 @@
     const steps = Array.from(page.querySelectorAll('[data-step]'));
     const message = document.getElementById('wasmer-migrate-message');
     const codeField = document.getElementById('wasmer-migrate-import-code');
+    const autoButton = document.getElementById('wasmer-migrate-auto-start');
+    const useCodeButton = document.getElementById('wasmer-migrate-use-code');
+    const useAutoButton = document.getElementById('wasmer-migrate-use-auto');
+    const autoGraphqlUrl = document.getElementById('wasmer-migrate-auto-graphql-url');
+    const autoToken = document.getElementById('wasmer-migrate-auto-token');
+    const autoOwner = document.getElementById('wasmer-migrate-auto-owner');
+    const autoRegion = document.getElementById('wasmer-migrate-auto-region');
+    const autoPerishAt = document.getElementById('wasmer-migrate-auto-perish-at');
+    const autoAppName = document.getElementById('wasmer-migrate-auto-app-name');
+    const autoAppText = document.getElementById('wasmer-migrate-auto-app');
+    const autoBuildText = document.getElementById('wasmer-migrate-auto-build');
+    const autoWpText = document.getElementById('wasmer-migrate-auto-wp');
     const connectButton = document.getElementById('wasmer-migrate-connect');
     const startButton = document.getElementById('wasmer-migrate-start');
     const clearButton = document.getElementById('wasmer-migrate-clear');
@@ -20,6 +32,7 @@
     const bytesText = document.getElementById('wasmer-migrate-bytes');
     const progressBar = document.getElementById('wasmer-migrate-progress-bar');
     const logsText = document.getElementById('wasmer-migrate-logs');
+    const doneMessage = document.getElementById('wasmer-migrate-done-message');
     let pollTimer = null;
 
     function initialState() {
@@ -59,9 +72,11 @@
             panel.hidden = panel.getAttribute('data-panel') !== name;
         });
         steps.forEach(function (step) {
+            const order = ['code', 'review', 'transfer', 'done'];
+            const activeName = name === 'auto' ? 'code' : name;
             const stepName = step.getAttribute('data-step');
-            step.classList.toggle('is-active', stepName === name);
-            step.classList.toggle('is-complete', ['code', 'review', 'transfer', 'done'].indexOf(stepName) < ['code', 'review', 'transfer', 'done'].indexOf(name));
+            step.classList.toggle('is-active', stepName === activeName);
+            step.classList.toggle('is-complete', order.indexOf(stepName) < order.indexOf(activeName));
         });
     }
 
@@ -83,10 +98,16 @@
     function migrationStep(state) {
         const status = state.status || 'idle';
         if (status === 'failed') {
-            return 'transfer';
+            return state.auto_app ? 'auto' : 'transfer';
         }
-        if (status === 'transfer_complete') {
+        if (status === 'transfer_complete' || status === 'auto_complete') {
             return 'done';
+        }
+        if (status.indexOf('auto_') === 0) {
+            if (status === 'auto_transferring' || status === 'auto_importing') {
+                return 'transfer';
+            }
+            return 'auto';
         }
         if (status === 'transferring' || status === 'exported') {
             return 'transfer';
@@ -94,7 +115,7 @@
         if (state.destination) {
             return 'review';
         }
-        return 'code';
+        return 'auto';
     }
 
     function render(state) {
@@ -105,6 +126,10 @@
         const bytesSent = progress.bytes_sent || 0;
         const databaseSent = progress.database_sent || 0;
         const percent = fileCount ? Math.min(100, Math.round((filesSent / fileCount) * 100)) : (databaseSent ? 5 : 0);
+        const auto = state.auto_app || {};
+        const autoApp = auto.app || {};
+        const targetWp = auto.target_wp_version || {};
+        const liveConfig = auto.live_config || {};
 
         statusText.textContent = state.status || 'idle';
         destinationText.textContent = (state.destination && (state.destination.target || state.destination.rest)) || '-';
@@ -114,12 +139,27 @@
         bytesText.textContent = bytesSent + ' bytes';
         progressBar.style.width = percent + '%';
         logsText.textContent = (state.logs || []).join('\n');
+        autoAppText.textContent = autoApp.url || autoApp.name || '-';
+        autoBuildText.textContent = auto.build_status || auto.status || 'idle';
+        autoWpText.textContent = [
+            targetWp.version || '',
+            liveConfig.phpVersion ? 'PHP ' + liveConfig.phpVersion : ''
+        ].filter(Boolean).join(' / ') || '-';
+        if (doneMessage) {
+            doneMessage.textContent = state.status === 'auto_complete' && autoApp.url
+                ? 'The migrated site is ready at ' + autoApp.url + '.'
+                : 'The target app has received and verified the transfer. Finish the import in the Wasmer app.';
+        }
 
         showPanel(migrationStep(state));
         if (state.error) {
             showMessage(state.error, 'error');
+        } else if (state.status === 'auto_complete') {
+            showMessage('Automatic Wasmer import completed.', 'success');
         } else if (state.status === 'transfer_complete') {
             showMessage('Transfer completed. Finish the import in the target Wasmer app.', 'success');
+        } else if ((state.status || '').indexOf('auto_') === 0) {
+            showMessage('Automatic Wasmer app migration is running: ' + state.status.replace('auto_', '').replace('_', ' ') + '.', 'info');
         } else {
             showMessage('', 'info');
         }
@@ -149,6 +189,44 @@
             connectButton.disabled = false;
         });
     });
+
+    if (useCodeButton) {
+        useCodeButton.addEventListener('click', function () {
+            showPanel('code');
+            showMessage('', 'info');
+        });
+    }
+
+    if (useAutoButton) {
+        useAutoButton.addEventListener('click', function () {
+            showPanel('auto');
+            showMessage('', 'info');
+        });
+    }
+
+    if (autoButton) {
+        autoButton.addEventListener('click', function () {
+            autoButton.disabled = true;
+            showPanel('auto');
+            showMessage('Creating a Wasmer app and preparing this site for transfer...', 'info');
+            startPolling();
+            request('wasmer_migrate_auto', {
+                graphql_url: autoGraphqlUrl ? autoGraphqlUrl.value : '',
+                token: autoToken ? autoToken.value : '',
+                owner: autoOwner ? autoOwner.value : '',
+                region: autoRegion ? autoRegion.value : '',
+                perish_at: autoPerishAt ? autoPerishAt.value : '',
+                app_name: autoAppName ? autoAppName.value : ''
+            }).then(function (state) {
+                render(state);
+            }).catch(function (error) {
+                render(error.state);
+                showMessage(error.message, 'error');
+            }).finally(function () {
+                autoButton.disabled = false;
+            });
+        });
+    }
 
     startButton.addEventListener('click', function () {
         startButton.disabled = true;

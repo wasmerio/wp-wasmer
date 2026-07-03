@@ -74,6 +74,35 @@ function wasmer_migrate_ajax_connect()
 }
 add_action('wp_ajax_wasmer_migrate_connect', 'wasmer_migrate_ajax_connect');
 
+function wasmer_migrate_ajax_auto()
+{
+    wasmer_migrate_ajax_require_admin();
+    $result = wasmer_migrate_auto_app_import([
+        'graphql_url' => wp_unslash($_POST['graphql_url'] ?? ''),
+        'token' => wp_unslash($_POST['token'] ?? ''),
+        'owner' => wp_unslash($_POST['owner'] ?? ''),
+        'region' => wp_unslash($_POST['region'] ?? ''),
+        'perish_at' => wp_unslash($_POST['perish_at'] ?? ''),
+        'app_name' => wp_unslash($_POST['app_name'] ?? ''),
+    ]);
+    if (is_wp_error($result)) {
+        $state = wasmer_migrate_get_state();
+        $state['status'] = 'failed';
+        $state['error'] = $result->get_error_message();
+        $state['auto_app'] = array_merge(is_array($state['auto_app'] ?? null) ? $state['auto_app'] : [], [
+            'status' => 'failed',
+            'error' => $result->get_error_message(),
+        ]);
+        wasmer_migrate_save_state($state);
+        if (!empty($state['id'])) {
+            wasmer_migrate_log($state['id'], 'Automatic Wasmer import failed.', ['error' => $result->get_error_message()]);
+        }
+        wp_send_json_error(['message' => $result->get_error_message(), 'state' => wasmer_migrate_public_state($state)], 500);
+    }
+    wp_send_json_success(wasmer_migrate_public_state($result));
+}
+add_action('wp_ajax_wasmer_migrate_auto', 'wasmer_migrate_ajax_auto');
+
 function wasmer_migrate_ajax_start()
 {
     wasmer_migrate_ajax_require_admin();
@@ -135,12 +164,52 @@ function wasmer_migrate_admin_page()
             <span data-step="done"><b>4</b> Done</span>
         </div>
         <div id="wasmer-migrate-message" class="notice inline" hidden></div>
-        <section class="wasmer-migrate-panel" data-panel="code">
+        <section class="wasmer-migrate-panel" data-panel="auto">
+            <h2>Create a new Wasmer app</h2>
+            <p>Create a perishable anonymous Wasmer WordPress app, transfer this site into it, then start the import automatically.</p>
+            <div class="wasmer-migrate-form-grid">
+                <label>
+                    <span>GraphQL endpoint</span>
+                    <input type="url" id="wasmer-migrate-auto-graphql-url" value="<?php echo esc_attr(wasmer_migrate_auto_default_graphql_url()); ?>">
+                </label>
+                <label>
+                    <span>API token</span>
+                    <input type="password" id="wasmer-migrate-auto-token" value="<?php echo esc_attr(wasmer_migrate_auto_default_token()); ?>" autocomplete="off">
+                </label>
+                <label>
+                    <span>Owner</span>
+                    <input type="text" id="wasmer-migrate-auto-owner" value="stackmachine">
+                </label>
+                <label>
+                    <span>Region</span>
+                    <input type="text" id="wasmer-migrate-auto-region" placeholder="auto">
+                </label>
+                <label>
+                    <span>Perish after</span>
+                    <input type="text" id="wasmer-migrate-auto-perish-at" value="PT2H">
+                </label>
+                <label>
+                    <span>App name</span>
+                    <input type="text" id="wasmer-migrate-auto-app-name" placeholder="auto-generated">
+                </label>
+            </div>
+            <p class="wasmer-migrate-actions">
+                <button type="button" class="button button-primary" id="wasmer-migrate-auto-start">Create app and import</button>
+                <button type="button" class="button" id="wasmer-migrate-use-code">Use an existing import code</button>
+            </p>
+            <div class="wasmer-migrate-summary">
+                <div><strong>App</strong><span id="wasmer-migrate-auto-app">-</span></div>
+                <div><strong>Build</strong><span id="wasmer-migrate-auto-build">idle</span></div>
+                <div><strong>WordPress</strong><span id="wasmer-migrate-auto-wp">-</span></div>
+            </div>
+        </section>
+        <section class="wasmer-migrate-panel" data-panel="code" hidden>
             <h2>Connect to your Wasmer app</h2>
             <p>Paste the import code generated in the target Wasmer WordPress app.</p>
             <textarea id="wasmer-migrate-import-code" rows="5" placeholder="wasmer-import:v1:..."><?php echo esc_textarea($state['code'] ?? ''); ?></textarea>
             <p class="wasmer-migrate-actions">
                 <button type="button" class="button button-primary" id="wasmer-migrate-connect">Validate code</button>
+                <button type="button" class="button" id="wasmer-migrate-use-auto">Create a new app instead</button>
             </p>
         </section>
         <section class="wasmer-migrate-panel" data-panel="review" hidden>
@@ -165,8 +234,8 @@ function wasmer_migrate_admin_page()
             </div>
         </section>
         <section class="wasmer-migrate-panel" data-panel="done" hidden>
-            <h2>Transfer complete</h2>
-            <p>The target app has received and verified the transfer. Finish the import in the Wasmer app.</p>
+            <h2>Migration complete</h2>
+            <p id="wasmer-migrate-done-message">The target app has received and verified the transfer. Finish the import in the Wasmer app.</p>
             <p><button type="button" class="button" id="wasmer-migrate-start-over">Start over</button></p>
         </section>
         <details class="wasmer-migrate-logs">
