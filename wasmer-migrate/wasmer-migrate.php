@@ -28,6 +28,7 @@ require_once __DIR__ . '/scanner.php';
 require_once __DIR__ . '/db-export.php';
 require_once __DIR__ . '/exporter.php';
 require_once __DIR__ . '/transfer-client.php';
+require_once __DIR__ . '/auto-app.php';
 require_once __DIR__ . '/admin-page.php';
 
 if (defined('WP_CLI') && WP_CLI) {
@@ -92,6 +93,23 @@ if (defined('WP_CLI') && WP_CLI) {
         {
             wasmer_migrate_reset_state();
             WP_CLI::success('Migration state cleared.');
+        }
+
+        public function auto($args, $assoc_args)
+        {
+            $result = wasmer_migrate_auto_app_import([
+                'graphql_url' => $assoc_args['graphql-url'] ?? '',
+                'token' => $assoc_args['token'] ?? '',
+                'owner' => $assoc_args['owner'] ?? '',
+                'region' => $assoc_args['region'] ?? '',
+                'perish_at' => $assoc_args['perish-at'] ?? '',
+                'app_name' => $assoc_args['app-name'] ?? '',
+            ]);
+            if (is_wp_error($result)) {
+                WP_CLI::error($result->get_error_message());
+            }
+            WP_CLI::line(wp_json_encode(wasmer_migrate_public_state($result), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            WP_CLI::success('Automatic Wasmer import completed.');
         }
     }
 

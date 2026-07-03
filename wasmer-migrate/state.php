@@ -16,6 +16,7 @@ function wasmer_migrate_default_state()
         'status' => 'idle',
         'code' => null,
         'destination' => null,
+        'auto_app' => null,
         'manifest' => null,
         'database' => null,
         'files' => [],

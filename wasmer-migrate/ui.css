@@ -105,6 +105,25 @@
     background: #f6f7f7;
 }
 
+.wasmer-migrate-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+}
+
+.wasmer-migrate-form-grid label span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--wasmer-muted);
+    font-weight: 600;
+}
+
+.wasmer-migrate-form-grid input {
+    width: 100%;
+    min-height: 36px;
+}
+
 .wasmer-migrate-actions {
     display: flex;
     flex-wrap: wrap;
