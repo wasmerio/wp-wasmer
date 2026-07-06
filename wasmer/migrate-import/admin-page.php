@@ -44,6 +44,10 @@ add_action('admin_enqueue_scripts', 'wasmer_import_admin_enqueue');
 
 function wasmer_import_dependency_report($session_id)
 {
+    if (function_exists('wasmer_import_load_import_dependencies')) {
+        wasmer_import_load_import_dependencies();
+    }
+
     $report = [
         'warnings' => [],
         'errors' => [],

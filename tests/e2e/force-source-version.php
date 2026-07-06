@@ -11,6 +11,10 @@ if ($session_id === '' || $version === '') {
     WP_CLI::error('Usage: force-source-version.php <session-id> <version>');
 }
 
+if (function_exists('wasmer_import_load_import_dependencies')) {
+    wasmer_import_load_import_dependencies();
+}
+
 $manifest = wasmer_import_load_manifest($session_id);
 if (!$manifest) {
     WP_CLI::error('Import manifest is missing.');

@@ -82,6 +82,13 @@ class Wasmer_Aio_Install_Command
 
 class Wasmer_Import_Command
 {
+    private function load_dependencies()
+    {
+        if (function_exists('wasmer_import_load_import_dependencies')) {
+            wasmer_import_load_import_dependencies();
+        }
+    }
+
     /**
      * Create a Wasmer import session.
      *
@@ -95,6 +102,8 @@ class Wasmer_Import_Command
      */
     public function create($args, $assoc_args)
     {
+        $this->load_dependencies();
+
         $ttl = $this->parse_duration($assoc_args['expires'] ?? '8h');
         $created = wasmer_import_create_session($ttl);
         WP_CLI::line(wp_json_encode([
@@ -108,6 +117,8 @@ class Wasmer_Import_Command
      */
     public function list_($args, $assoc_args)
     {
+        $this->load_dependencies();
+
         WP_CLI::line(wp_json_encode(wasmer_import_list_sessions(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
@@ -121,6 +132,8 @@ class Wasmer_Import_Command
      */
     public function status($args, $assoc_args)
     {
+        $this->load_dependencies();
+
         $session = wasmer_import_get_session($args[0] ?? '');
         if (!$session) {
             WP_CLI::error('Unknown import session.');
@@ -138,6 +151,8 @@ class Wasmer_Import_Command
      */
     public function revoke($args, $assoc_args)
     {
+        $this->load_dependencies();
+
         $session = wasmer_import_get_session($args[0] ?? '');
         if (!$session) {
             WP_CLI::error('Unknown import session.');
@@ -158,6 +173,8 @@ class Wasmer_Import_Command
      */
     public function start($args, $assoc_args)
     {
+        $this->load_dependencies();
+
         $session_id = $args[0] ?? '';
         if (function_exists('wasmer_import_dependency_report')) {
             $report = wasmer_import_dependency_report($session_id);
@@ -193,6 +210,8 @@ class Wasmer_Import_Command
      */
     public function cleanup($args, $assoc_args)
     {
+        $this->load_dependencies();
+
         $older_than = $this->parse_duration($assoc_args['older-than'] ?? '7d');
         $cutoff = time() - $older_than;
         $removed = 0;
