@@ -6,6 +6,10 @@ if (!defined('ABSPATH')) {
 
 function wasmer_import_admin_menu()
 {
+    if (!WASMER_MIGRATIONS_UI_ENABLED) {
+        return;
+    }
+
     add_submenu_page(
         'wasmer-dashboard',
         'Import Site',
