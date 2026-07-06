@@ -8,6 +8,8 @@ Use the pages below depending on what you are trying to do with the plugin.
   The CLI commands registered by the plugin and how to use them from a WordPress install.
 - [Wasmer integration](wasmer-integration.md)
   How Wasmer uses the plugin, which environment variables it depends on, and how `liveconfig` is surfaced in the Wasmer dashboard.
+- [Site migrations](site-migrations.md)
+  How the first-party plugin-to-plugin migration system transfers an existing WordPress site into a Wasmer WordPress app.
 - [Admin and update behavior](admin-update-behavior.md)
   The WordPress admin integrations and the WordPress core update restrictions applied by the plugin.
 
