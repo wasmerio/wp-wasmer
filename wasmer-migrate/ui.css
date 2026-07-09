@@ -26,7 +26,7 @@
 
 .wasmer-migrate-stepper {
     display: grid;
-    grid-template-columns: repeat(4, minmax(128px, 1fr));
+    grid-template-columns: repeat(3, minmax(128px, 1fr));
     gap: 10px;
     margin: 18px 0;
 }
@@ -105,6 +105,30 @@
     background: #f6f7f7;
 }
 
+.wasmer-migrate-start {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 0 10px;
+    text-align: center;
+}
+
+.wasmer-migrate-primary-action.button {
+    min-height: 48px;
+    padding: 0 34px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.wasmer-migrate-panel .wasmer-migrate-start-copy {
+    max-width: 620px;
+    margin: 0;
+    color: #3c434a;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
 .wasmer-migrate-form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -129,6 +153,22 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 0;
+}
+
+.wasmer-migrate-advanced {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-4px);
+    max-width: 520px;
+    margin: 0 auto;
+    transition: max-height 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.wasmer-migrate-advanced.is-open {
+    max-height: 120px;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .wasmer-migrate-summary {
@@ -164,6 +204,65 @@
     overflow-wrap: anywhere;
 }
 
+.wasmer-migrate-progress-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.wasmer-migrate-progress-steps li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 42px;
+    border: 1px solid var(--wasmer-border);
+    border-radius: 4px;
+    background: #f6f7f7;
+    padding: 10px 12px;
+    color: #50575e;
+    font-weight: 600;
+}
+
+.wasmer-migrate-progress-steps li span {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    border-radius: 50%;
+    border: 2px solid #8c8f94;
+    background: #fff;
+}
+
+.wasmer-migrate-progress-steps li.is-active {
+    border-color: var(--wasmer-blue);
+    background: #f0f3ff;
+    color: #1d2327;
+}
+
+.wasmer-migrate-progress-steps li.is-active span {
+    border-color: var(--wasmer-blue);
+    background: var(--wasmer-blue);
+    box-shadow: 0 0 0 3px #dfe5ff;
+}
+
+.wasmer-migrate-progress-steps li.is-complete {
+    border-color: #68de7c;
+    background: #f0fff4;
+}
+
+.wasmer-migrate-progress-steps li.is-complete span {
+    border-color: var(--wasmer-green);
+    background: var(--wasmer-green);
+}
+
+.wasmer-migrate-progress-detail {
+    margin: 10px 0 0;
+    color: #3c434a;
+    font-size: 14px;
+}
+
 .wasmer-migrate-progress-bar {
     height: 10px;
     background: #f0f0f1;
@@ -185,6 +284,12 @@
     margin-top: 16px;
 }
 
+.wasmer-migrate-footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 16px 0 0;
+}
+
 .wasmer-migrate-logs pre {
     max-height: 260px;
     overflow: auto;
@@ -194,8 +299,48 @@
     border-radius: 4px;
 }
 
+.wasmer-migrate-app-link.button {
+    min-height: 40px;
+    padding: 4px 20px;
+    font-weight: 700;
+}
+
+.wasmer-migrate-warning {
+    max-width: 700px;
+    margin: 18px 0;
+    border-left: 4px solid #d63638;
+    background: #fcf0f1;
+    padding: 12px 14px;
+    color: #1d2327;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.wasmer-migrate-next {
+    max-width: 700px;
+    margin: 18px 0;
+}
+
+.wasmer-migrate-next h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+.wasmer-migrate-next ol {
+    margin: 0 0 0 20px;
+}
+
+.wasmer-migrate-next li {
+    margin-bottom: 6px;
+    color: #3c434a;
+}
+
 @media (max-width: 782px) {
     .wasmer-migrate-stepper {
+        grid-template-columns: 1fr;
+    }
+
+    .wasmer-migrate-progress-steps {
         grid-template-columns: 1fr;
     }
 
