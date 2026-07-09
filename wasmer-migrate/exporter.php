@@ -99,11 +99,14 @@ function wasmer_migrate_build_source_preflight($options)
     ];
 }
 
-function wasmer_migrate_prepare_export()
+function wasmer_migrate_prepare_export($run_id = '', $run_token = '')
 {
     $state = wasmer_migrate_get_state();
     if (empty($state['id'])) {
         $state['id'] = wasmer_migrate_new_id();
+    }
+    if ($run_id !== '' && $run_token !== '' && !wasmer_migrate_is_active_run($run_id, $run_token)) {
+        return wasmer_migrate_stale_run_error();
     }
     wasmer_migrate_ensure_run_dir($state['id']);
 
@@ -125,11 +128,23 @@ function wasmer_migrate_prepare_export()
     $state['database'] = $database;
     $state['files'] = $files;
     $state['manifest'] = $manifest;
-    wasmer_migrate_save_state($state);
-    wasmer_migrate_log($state['id'], 'Export prepared.', [
-        'files' => count($files),
-        'database_size' => $database['size'],
-    ]);
+    $saved = ($run_id !== '' && $run_token !== '')
+        ? wasmer_migrate_save_state_for_run($state, $run_id, $run_token)
+        : wasmer_migrate_save_state($state);
+    if (is_wp_error($saved)) {
+        return $saved;
+    }
+    if ($run_id !== '' && $run_token !== '') {
+        wasmer_migrate_log_for_run($state['id'], $run_token, 'Export prepared.', [
+            'files' => count($files),
+            'database_size' => $database['size'],
+        ]);
+    } else {
+        wasmer_migrate_log($state['id'], 'Export prepared.', [
+            'files' => count($files),
+            'database_size' => $database['size'],
+        ]);
+    }
 
     return $state;
 }

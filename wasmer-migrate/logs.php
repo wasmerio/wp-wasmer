@@ -25,6 +25,15 @@ function wasmer_migrate_log($migration_id, $message, $context = [])
     }
 }
 
+function wasmer_migrate_log_for_run($migration_id, $run_token, $message, $context = [])
+{
+    if (!wasmer_migrate_is_active_run($migration_id, $run_token)) {
+        return false;
+    }
+    wasmer_migrate_log($migration_id, $message, $context);
+    return true;
+}
+
 function wasmer_migrate_read_logs($migration_id, $limit = 100)
 {
     $file = wasmer_migrate_run_dir($migration_id) . '/logs/migrate.log';
