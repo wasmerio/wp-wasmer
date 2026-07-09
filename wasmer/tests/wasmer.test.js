@@ -25,9 +25,16 @@ let server;
 let tempBlueprintFile;
 let mockGraphQLServer;
 
+// Records every purgeAppCdnCache mutation received by the mock GraphQL API.
+const purgeCalls = [];
+
 async function createPHPServer(signal, blueprintFilename = "wp-blueprint-protected.json") {
   let filename = fileURLToPath(import.meta.url);
-      // 1) Start the server
+      // Start the mock GraphQL API first: blueprint steps (e.g. plugin
+      // activation) already trigger CDN cache purge requests against it.
+      createMockGraphQLServer();
+
+      // Start the server
       server = spawn(
         "node",
         [
@@ -61,12 +68,20 @@ async function createPHPServer(signal, blueprintFilename = "wp-blueprint-protect
 
       // Wait until it's up
       await serverStarted;
+}
 
+function createMockGraphQLServer() {
       const schema = createSchema({
         typeDefs: /* GraphQL */ `
           type Query {
             viewer: User
             node(id: ID!): Node
+          }
+          type Mutation {
+            purgeAppCdnCache(app: ID!): PurgeAppCdnCachePayload
+          }
+          type PurgeAppCdnCachePayload {
+            success: Boolean
           }
           type User {
             email: String
@@ -95,6 +110,13 @@ async function createPHPServer(signal, blueprintFilename = "wp-blueprint-protect
                 return { id: "123", __typename: "DeployApp" };
               }
               return null;
+            },
+          },
+          Mutation: {
+            purgeAppCdnCache: (parent, args, context) => {
+              const auth = context.request.headers.get("authorization");
+              purgeCalls.push({ app: args.app, auth });
+              return { success: auth === "Bearer api-token-123" };
             },
           },
         },
@@ -400,6 +422,108 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           version: WP_VERSION,
         },
       });
+    });
+  });
+
+  // Note: this suite runs before the spawnSync-based suites below; their
+  // long synchronous blocking lets pooled keep-alive sockets go stale, which
+  // makes the first fetch afterwards fail.
+  describe("CDN cache purge", () => {
+    async function loggedInFetch() {
+      const fetchWithCookie = fetchCookie(fetch);
+      await fetchWithCookie(
+        `${SERVER_URL}/?rest_route=/wasmer/v1/magiclogin&magiclogin=123`,
+        { redirect: "manual" }
+      );
+      return fetchWithCookie;
+    }
+
+    async function restNonce(fetchWithCookie) {
+      const req = await fetchWithCookie(
+        `${SERVER_URL}/wp-admin/admin-ajax.php?action=rest-nonce`
+      );
+      assert.equal(req.status, 200, "Expected rest-nonce to return 200");
+      return (await req.text()).trim();
+    }
+
+    async function createPost(fetchWithCookie, nonce, status) {
+      return fetchWithCookie(`${SERVER_URL}/?rest_route=/wp/v2/posts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-WP-Nonce": nonce,
+        },
+        body: JSON.stringify({
+          title: `CDN purge test (${status})`,
+          content: "CDN purge test content",
+          status,
+        }),
+      });
+    }
+
+    it("does not purge when saving a draft", async () => {
+      const fetchWithCookie = await loggedInFetch();
+      const nonce = await restNonce(fetchWithCookie);
+
+      purgeCalls.length = 0;
+      const req = await createPost(fetchWithCookie, nonce, "draft");
+      assert.equal(req.status, 201, "Expected draft post to be created");
+      assert.equal(
+        purgeCalls.length,
+        0,
+        "Expected no CDN purge for a draft save"
+      );
+    });
+
+    it("purges the CDN cache exactly once when a post is published", async () => {
+      const fetchWithCookie = await loggedInFetch();
+      const nonce = await restNonce(fetchWithCookie);
+
+      purgeCalls.length = 0;
+      const req = await createPost(fetchWithCookie, nonce, "publish");
+      assert.equal(req.status, 201, "Expected post to be published");
+
+      assert.equal(
+        purgeCalls.length,
+        1,
+        "Expected exactly one CDN purge call (coalesced)"
+      );
+      assert.equal(purgeCalls[0].app, "abc", "Expected purge for app 'abc'");
+      assert.equal(
+        purgeCalls[0].auth,
+        "Bearer api-token-123",
+        "Expected purge to use the Wasmer API token"
+      );
+    });
+
+    it("purges via the admin bar button", async () => {
+      const fetchWithCookie = await loggedInFetch();
+
+      const adminReq = await fetchWithCookie(`${SERVER_URL}/wp-admin/`);
+      assert.equal(adminReq.status, 200, "Expected status 200");
+      const body = await adminReq.text();
+
+      const match = body.match(
+        /href=('|")([^'"]*admin-post\.php\?action=wasmer_purge_cdn_cache[^'"]*)('|")/
+      );
+      assert.ok(match, "Expected admin bar to contain the purge link");
+      const purgeUrl = match[2].replace(/&amp;|&#0?38;/g, "&");
+
+      purgeCalls.length = 0;
+      const purgeReq = await fetchWithCookie(purgeUrl, {
+        redirect: "manual",
+      });
+      assert.equal(purgeReq.status, 302, "Expected purge to redirect");
+      assert.match(
+        purgeReq.headers.get("Location"),
+        /wasmer-cdn-purged=1/,
+        "Expected redirect to signal a successful purge"
+      );
+      assert.equal(
+        purgeCalls.length,
+        1,
+        "Expected exactly one CDN purge call"
+      );
     });
   });
 

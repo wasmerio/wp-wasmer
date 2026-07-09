@@ -24,6 +24,7 @@ function wasmer_base_url()
 require_once __DIR__ . '/defines.php';
 require_once __DIR__ . '/rest-api.php';
 require_once __DIR__ . '/admin.php';
+require_once __DIR__ . '/cdn-cache.php';
 require_once __DIR__ . '/migrate-import/rest-routes.php';
 require_once __DIR__ . '/migrate-import/admin-page.php';
 require_once __DIR__ . '/migrate-import/dashboard-panel.php';
