@@ -44,6 +44,26 @@ class Wasmer_Command
 
         WP_CLI::line($json);
     }
+
+    /**
+     * Purge the Wasmer CDN cache for this app.
+     *
+     * ## EXAMPLES
+     *
+     *     wp wasmer purge-cdn-cache
+     */
+    public function purge_cdn_cache($args, $assoc_args)
+    {
+        if (!function_exists('wasmer_cdn_cache_enabled') || !wasmer_cdn_cache_enabled()) {
+            WP_CLI::error('The Wasmer CDN cache is not enabled for this app (WASMER_API_TOKEN and WASMER_GRAPHQL_URL must be set).');
+        }
+
+        if (wasmer_cdn_purge_cache()) {
+            WP_CLI::success('CDN cache purged.');
+        } else {
+            WP_CLI::error('CDN cache purge failed.');
+        }
+    }
 }
 
 class Wasmer_Aio_Install_Command

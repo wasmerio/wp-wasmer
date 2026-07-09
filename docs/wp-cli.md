@@ -31,6 +31,21 @@ Behavior:
 - Plugin and theme display labels are available as `title`.
 - Any format other than `json` returns a WP-CLI error.
 
+## `wp wasmer purge-cdn-cache`
+
+Purges the whole Wasmer CDN cache for the app.
+
+Example:
+
+```bash
+wp wasmer purge-cdn-cache
+```
+
+Behavior:
+
+- Requires the `WASMER_API_TOKEN` and `WASMER_GRAPHQL_URL` environment variables; errors otherwise.
+- Calls the `purgeAppCdnCache` GraphQL mutation and reports success or failure.
+
 ## `wp wasmer-aio-install install`
 
 Runs the plugin's all-in-one install helper.
