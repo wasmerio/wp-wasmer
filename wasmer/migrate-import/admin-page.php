@@ -11,7 +11,7 @@ function wasmer_import_admin_menu()
     }
 
     add_submenu_page(
-        'wasmer-dashboard',
+        'wasmer-cdn-cache',
         'Import Site',
         'Import Site',
         'manage_options',

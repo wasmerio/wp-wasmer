@@ -128,6 +128,7 @@ function wasmer_add_top_bar_menu($admin_bar) {
         'href'   => wasmer_app_dashboard_url(WASMER_APP_ID),
         'meta'   => array(
             'title' => 'Go to Wasmer Control Panel', // Tooltip
+            'target' => '_blank',
             'rel' => 'noopener noreferrer',
         ),
     ));
@@ -140,27 +141,39 @@ function wasmer_add_admin_menu() {
     $svg_icon = 'data:image/svg+xml;base64,' . base64_encode(wasmer_icon());
 
     add_menu_page(
-        'Wasmer Dashboard', // Page title
+        'Wasmer',           // Page title
         'Wasmer',           // Menu title
         'manage_options',   // Capability
-        'wasmer-dashboard', // Menu slug
-        'wasmer_dashboard_page', // Callback function
+        'wasmer-cdn-cache', // Menu slug (top-level lands on the CDN Cache page)
+        'wasmer_cdn_cache_admin_page', // Callback function
         $svg_icon,  // Icon (dashicons or URL to a custom icon)
         2.1                 // Position after Dashboard
     );
 
     add_submenu_page(
-        'wasmer-dashboard', // Parent slug
-        'Dashboard',        // Page title
-        'Dashboard',        // Submenu title
+        'wasmer-cdn-cache', // Parent slug
+        'Wasmer CDN Cache', // Page title
+        'CDN Cache',        // Submenu title
         'manage_options',   // Capability
-        'wasmer-dashboard', // Menu slug
-        'wasmer_dashboard_page' // Callback function
+        'wasmer-cdn-cache', // Menu slug
+        'wasmer_cdn_cache_admin_page' // Callback function
     );
+
+    // add_submenu_page(
+    //     'wasmer-cdn-cache', // Parent slug
+    //     'Dashboard',        // Page title
+    //     'Dashboard',        // Submenu title
+    //     'manage_options',   // Capability
+    //     'wasmer-dashboard', // Menu slug
+    //     'wasmer_dashboard_page' // Callback function
+    // );
 
 
     if (WASMER_APP_ID) {
-        $submenu["wasmer-dashboard"][] = array('Wasmer Control Panel', 'manage_options', wasmer_app_dashboard_url(WASMER_APP_ID));
+        array_unshift(
+            $submenu["wasmer-cdn-cache"],
+            array('Wasmer App Dashboard', 'manage_options', wasmer_app_dashboard_url(WASMER_APP_ID))
+        );
     }
 
     // Add a submenu linking to Wasmer.io
@@ -172,6 +185,26 @@ function wasmer_add_admin_menu() {
     //     'wasmer-external',  // Menu slug
     //     'wasmer_external_link_page' // Callback function (for redirect)
     // );
+}
+
+// Sidebar submenu entries added via $submenu don't support target=_blank,
+// so retarget the external Control Panel link with a small footer script.
+add_action('admin_footer', 'wasmer_admin_menu_retarget_external_links');
+function wasmer_admin_menu_retarget_external_links() {
+    if (!WASMER_APP_ID) {
+        return;
+    }
+    ?>
+    <script>
+    (function () {
+        var link = document.querySelector('#adminmenu a[href="<?php echo esc_url(wasmer_app_dashboard_url(WASMER_APP_ID)); ?>"]');
+        if (link) {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+        }
+    })();
+    </script>
+    <?php
 }
 
 function wasmer_add_dashboard_widget() {

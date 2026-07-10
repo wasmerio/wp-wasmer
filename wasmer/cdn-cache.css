@@ -1,0 +1,132 @@
+.wasmer-cdn-page {
+    --wasmer-blue: #3858e9;
+    --wasmer-green: #008a20;
+    --wasmer-border: #dcdcde;
+    --wasmer-muted: #646970;
+    max-width: 860px;
+}
+
+.wasmer-cdn-header {
+    margin: 18px 0 14px;
+}
+
+.wasmer-cdn-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.wasmer-cdn-header p {
+    margin: 0;
+    color: var(--wasmer-muted);
+    font-size: 14px;
+}
+
+.wasmer-cdn-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: 4px;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.wasmer-cdn-status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.wasmer-cdn-status.is-active {
+    background: #edfaef;
+    color: var(--wasmer-green);
+}
+
+.wasmer-cdn-status.is-active::before {
+    background: #00a32a;
+}
+
+.wasmer-cdn-status.is-inactive {
+    background: #fcf9e8;
+    color: #996800;
+}
+
+.wasmer-cdn-status.is-inactive::before {
+    background: #dba617;
+}
+
+.wasmer-cdn-page .wasmer-cdn-notice {
+    margin: 0 0 16px;
+}
+
+.wasmer-cdn-panel {
+    background: #fff;
+    border: 1px solid var(--wasmer-border);
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    padding: 22px;
+    margin-bottom: 16px;
+}
+
+.wasmer-cdn-panel h2 {
+    margin-top: 0;
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+.wasmer-cdn-panel p {
+    max-width: 700px;
+    color: #3c434a;
+}
+
+.wasmer-cdn-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.wasmer-cdn-actions .button .dashicons-external {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+
+.wasmer-cdn-panel h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+}
+
+.wasmer-cdn-section p:first-of-type {
+    margin-top: 0;
+}
+
+.wasmer-cdn-section + .wasmer-cdn-section {
+    border-top: 1px solid var(--wasmer-border);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.wasmer-cdn-actions label {
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.wasmer-cdn-meta {
+    color: var(--wasmer-muted);
+    font-size: 13px;
+}
+
+@media (max-width: 782px) {
+    .wasmer-cdn-panel {
+        padding: 16px;
+    }
+}
