@@ -18,6 +18,17 @@ function wasmer_cdn_cache_enabled()
 }
 
 /**
+ * Whether automatic purging on content changes is enabled.
+ *
+ * Site-level setting, toggled from the Wasmer > CDN Cache admin page.
+ * Defaults to enabled. Manual purging is not affected by this setting.
+ */
+function wasmer_cdn_auto_purge_enabled()
+{
+    return get_option('wasmer_cdn_auto_purge_enabled', '1') !== '0';
+}
+
+/**
  * Purge the whole Wasmer CDN cache for this app.
  *
  * @return bool True if the purge succeeded.
@@ -45,6 +56,7 @@ function wasmer_cdn_purge_cache()
     $success = (bool) ($response['data']['purgeAppCdnCache']['success'] ?? false);
 
     if ($success) {
+        update_option('wasmer_cdn_cache_last_purged', time(), false);
         do_action('wasmer_cdn_cache_purged');
     } else {
         error_log('wp-wasmer: CDN cache purge failed: ' . wp_json_encode($response));
@@ -66,7 +78,7 @@ function wasmer_cdn_schedule_purge()
     if ($scheduled || !wasmer_cdn_cache_enabled()) {
         return;
     }
-    if (!apply_filters('wasmer_cdn_cache_purge_enabled', true)) {
+    if (!apply_filters('wasmer_cdn_cache_purge_enabled', wasmer_cdn_auto_purge_enabled())) {
         return;
     }
 
@@ -216,9 +228,141 @@ function wasmer_cdn_handle_manual_purge()
     exit;
 }
 
+add_action('admin_post_wasmer_cdn_save_settings', 'wasmer_cdn_handle_save_settings');
+function wasmer_cdn_handle_save_settings()
+{
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You are not allowed to change CDN cache settings.'), '', array('response' => 403));
+    }
+    check_admin_referer('wasmer_cdn_save_settings');
+
+    $enabled = isset($_POST['wasmer_cdn_auto_purge']) && '1' === $_POST['wasmer_cdn_auto_purge'];
+    update_option('wasmer_cdn_auto_purge_enabled', $enabled ? '1' : '0', false);
+
+    wp_safe_redirect(admin_url('admin.php?page=wasmer-cdn-cache&wasmer-cdn-settings-saved=1'));
+    exit;
+}
+
+/* -------------------------------------------------------------------------
+ *  Admin page: Wasmer > CDN Cache
+ * ---------------------------------------------------------------------- */
+
+add_action('admin_enqueue_scripts', 'wasmer_cdn_cache_admin_enqueue');
+function wasmer_cdn_cache_admin_enqueue($hook)
+{
+    if ($hook !== 'toplevel_page_wasmer-cdn-cache') {
+        return;
+    }
+    $style_path = WP_WASMER_PLUGIN_DIR_PATH . 'wasmer/cdn-cache.css';
+    $style_version = file_exists($style_path) ? filemtime($style_path) : WP_WASMER_PLUGIN_VERSION;
+    wp_enqueue_style('wasmer-cdn-cache', WP_WASMER_PLUGIN_DIR_URL . 'wasmer/cdn-cache.css', [], $style_version);
+}
+
+function wasmer_cdn_cache_admin_page()
+{
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $enabled = wasmer_cdn_cache_enabled();
+    // Same URL as the "Wasmer Control Panel" button on the dashboard widget.
+    $configure_url = WASMER_APP_ID ? wasmer_app_dashboard_url(WASMER_APP_ID) : '';
+    $last_purged = (int) get_option('wasmer_cdn_cache_last_purged');
+    ?>
+    <div class="wrap wasmer-cdn-page">
+        <div class="wasmer-cdn-header">
+            <h1>
+                <?php echo wasmer_icon(); ?> CDN Cache
+                <?php if ($enabled) : ?>
+                    <span class="wasmer-cdn-status is-active">Active</span>
+                <?php else : ?>
+                    <span class="wasmer-cdn-status is-inactive">Not enabled</span>
+                <?php endif; ?>
+            </h1>
+            <p>Manage the Wasmer CDN cache for this app.</p>
+        </div>
+
+        <?php if (!$enabled) : ?>
+            <div class="notice notice-warning inline wasmer-cdn-notice">
+                <p>
+                    <strong>CDN caching is not enabled for this app.</strong>
+                    Enable it in the Wasmer Control Panel to serve cached pages and assets from the edge.
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <div class="wasmer-cdn-panel">
+            <h2>Purge cache</h2>
+            <p>
+                The Wasmer CDN serves cached copies of your pages and assets from edge locations
+                close to your visitors.
+                <a href="https://docs.wasmer.io/edge/learn/cdn-cache" target="_blank" rel="noopener noreferrer">Learn more about the CDN cache</a>.
+            </p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('wasmer_purge_cdn_cache'); ?>
+                <input type="hidden" name="action" value="wasmer_purge_cdn_cache">
+                <p class="wasmer-cdn-actions">
+                    <button type="submit" class="button button-primary button-hero" <?php disabled(!$enabled); ?>>
+                        Purge CDN Cache
+                    </button>
+                    <?php if ($enabled && $last_purged) : ?>
+                        <span class="wasmer-cdn-meta">
+                            Last purged <?php echo esc_html(human_time_diff($last_purged, time())); ?> ago
+                        </span>
+                    <?php endif; ?>
+                </p>
+            </form>
+        </div>
+
+        <div class="wasmer-cdn-panel">
+            <h2>Configuration</h2>
+            <div class="wasmer-cdn-section">
+                <h3>Automatic purging</h3>
+                <p>Purge the cache automatically when content changes (posts, comments, themes, plugins, menus).</p>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('wasmer_cdn_save_settings'); ?>
+                    <input type="hidden" name="action" value="wasmer_cdn_save_settings">
+                    <p class="wasmer-cdn-actions">
+                        <label for="wasmer-cdn-auto-purge">Automatic purging</label>
+                        <select name="wasmer_cdn_auto_purge" id="wasmer-cdn-auto-purge" <?php disabled(!$enabled); ?>>
+                            <option value="1" <?php selected(wasmer_cdn_auto_purge_enabled()); ?>>Enabled</option>
+                            <option value="0" <?php selected(!wasmer_cdn_auto_purge_enabled()); ?>>Disabled</option>
+                        </select>
+                        <button type="submit" class="button" <?php disabled(!$enabled); ?>>Save</button>
+                    </p>
+                </form>
+            </div>
+            <div class="wasmer-cdn-section">
+                <h3>Wasmer Control Panel</h3>
+                <p>Enable, disable, and fine-tune CDN caching for this app.</p>
+                <p class="wasmer-cdn-actions">
+                    <?php if ($configure_url) : ?>
+                        <a class="button" href="<?php echo esc_url($configure_url); ?>" target="_blank" rel="noopener noreferrer">
+                            Configure CDN Cache
+                            <span class="dashicons dashicons-external" aria-hidden="true"></span>
+                            <span class="screen-reader-text">(opens in a new tab)</span>
+                        </a>
+                    <?php else : ?>
+                        <button type="button" class="button" disabled>Configure CDN Cache</button>
+                        <span class="wasmer-cdn-meta">No Wasmer app is associated with this site.</span>
+                    <?php endif; ?>
+                </p>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
 add_action('admin_notices', 'wasmer_cdn_purge_admin_notice');
 function wasmer_cdn_purge_admin_notice()
 {
+    if (isset($_GET['wasmer-cdn-settings-saved'])) {
+        echo '<div class="notice notice-success is-dismissible"><p>' .
+            esc_html__('CDN cache settings saved.') .
+            '</p></div>';
+        return;
+    }
+
     if (!isset($_GET['wasmer-cdn-purged'])) {
         return;
     }
