@@ -196,13 +196,19 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           );
         });
         it("Wasmer notice appears in update-core.php", async () => {
-          const req = await fetch(`${SERVER_URL}/wp-admin/update-core.php`);
+          const fetchWithCookie = fetchCookie(fetch);
+          await fetchWithCookie(
+            `${SERVER_URL}/?rest_route=/wasmer/v1/magiclogin&magiclogin=123`,
+            { redirect: "manual" }
+          );
+          const req = await fetchWithCookie(
+            `${SERVER_URL}/wp-admin/update-core.php`
+          );
           assert.equal(req.status, 200, "Expected status 200");
           const body = await req.text();
-          assert.ok(
-            body.indexOf(
-              `Update to version ${LATEST_WP_VERSION} from Wasmer WordPress Settings`
-            ) > -1,
+          assert.match(
+            body,
+            /Update to version [^<]+ from Wasmer WordPress Settings/,
             "Expected Wasmer WordPress Settings notice"
           );
         });

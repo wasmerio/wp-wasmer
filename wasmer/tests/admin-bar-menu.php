@@ -19,6 +19,10 @@ function is_admin()
     return $wasmer_test_is_admin;
 }
 
+function add_action()
+{
+}
+
 function wasmer_base_url()
 {
     return 'http://wasmer.xyz';
