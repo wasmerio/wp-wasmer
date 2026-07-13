@@ -458,6 +458,22 @@ function wasmer_import_preserve_destination_users($manifest, $source_prefix, $st
     }
 
     foreach ($destination_users as $user) {
+        $source_user_id = $wpdb->get_var($wpdb->prepare(
+            'SELECT ID FROM ' . wasmer_import_sql_identifier($staged_users_table) . ' WHERE user_login = %s LIMIT 1',
+            (string) $user['user_login']
+        ));
+        if (!$source_user_id && !empty($user['user_email'])) {
+            $source_user_id = $wpdb->get_var($wpdb->prepare(
+                'SELECT ID FROM ' . wasmer_import_sql_identifier($staged_users_table) . ' WHERE user_email = %s LIMIT 1',
+                (string) $user['user_email']
+            ));
+        }
+        if ($source_user_id) {
+            // Source credentials and metadata win when the same identity exists
+            // on both sites. Destination-only users are still merged below.
+            continue;
+        }
+
         $staged_user_id = wasmer_import_staged_user_id_for_destination_user($staged_users_table, $user);
 
         $conflicting_ids = $wpdb->get_col($wpdb->prepare(

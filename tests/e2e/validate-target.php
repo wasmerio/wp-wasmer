@@ -96,6 +96,11 @@ if (get_user_meta($source_user->ID, $source_prefix . 'wasmer_migration_e2e_prefi
     WP_CLI::error('Source-prefixed usermeta key remained after import.');
 }
 
+$source_admin = get_user_by('login', 'admin');
+if (!$source_admin || !wp_check_password('password', $source_admin->user_pass, $source_admin->ID)) {
+    WP_CLI::error('Source admin password was not preserved over the colliding destination admin.');
+}
+
 $active_plugins = get_option('active_plugins', []);
 if (!is_array($active_plugins) || !in_array('wp-wasmer/wp-wasmer.php', $active_plugins, true)) {
     WP_CLI::error('Target wp-wasmer plugin was not preserved as active.');

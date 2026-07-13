@@ -15,6 +15,8 @@
     const useCodeButton = document.getElementById('wasmer-migrate-use-code');
     const useAutoButton = document.getElementById('wasmer-migrate-use-auto');
     const autoGraphqlUrl = document.getElementById('wasmer-migrate-auto-graphql-url');
+    const autoAppName = document.getElementById('wasmer-migrate-auto-app-name');
+    const autoToken = document.getElementById('wasmer-migrate-auto-token');
     const autoAppText = document.getElementById('wasmer-migrate-auto-app');
     const autoBuildText = document.getElementById('wasmer-migrate-auto-build');
     const autoWpText = document.getElementById('wasmer-migrate-auto-wp');
@@ -32,10 +34,18 @@
     const progressBar = document.getElementById('wasmer-migrate-progress-bar');
     const progressSteps = Array.from(page.querySelectorAll('[data-progress-step]'));
     const progressDetail = document.getElementById('wasmer-migrate-progress-detail');
+    const spinner = document.getElementById('wasmer-migrate-spinner');
+    const transferSummary = document.getElementById('wasmer-migrate-transfer-summary');
+    const failedMessage = document.getElementById('wasmer-migrate-failed-message');
+    const retryButton = document.getElementById('wasmer-migrate-retry');
+    const failedStartOverButton = document.getElementById('wasmer-migrate-failed-start-over');
     const logsText = document.getElementById('wasmer-migrate-logs');
     const doneMessage = document.getElementById('wasmer-migrate-done-message');
     const appLink = document.getElementById('wasmer-migrate-app-link');
+    const dashboardLink = document.getElementById('wasmer-migrate-dashboard-link');
     const perishAtText = document.getElementById('wasmer-migrate-perish-at');
+    const temporaryWarning = document.getElementById('wasmer-migrate-temporary-warning');
+    const connectAccountStep = document.getElementById('wasmer-migrate-connect-account-step');
     let pollTimer = null;
     let autoRequestRunning = false;
     let renderGeneration = 0;
@@ -103,7 +113,7 @@
         });
         steps.forEach(function (step) {
             const order = hasLegacyWizard ? ['code', 'review', 'transfer', 'done'] : ['auto', 'transfer', 'done'];
-            const activeName = order.indexOf(name) === -1 ? order[0] : name;
+            const activeName = name === 'failed' ? 'transfer' : (order.indexOf(name) === -1 ? order[0] : name);
             const stepName = step.getAttribute('data-step');
             step.classList.toggle('is-active', stepName === activeName);
             step.classList.toggle('is-complete', order.indexOf(stepName) < order.indexOf(activeName));
@@ -143,7 +153,7 @@
             return 'code';
         }
         if (status === 'failed') {
-            return state.auto_app ? 'transfer' : 'auto';
+            return state.auto_app ? 'failed' : 'auto';
         }
         if (status === 'transfer_complete' || status === 'auto_complete') {
             return 'done';
@@ -169,6 +179,13 @@
             return 'preparing';
         }
         return 'creating';
+    }
+
+    function migrationIsRunning(state) {
+        const status = (state && state.status) || '';
+        return status === 'exported'
+            || status === 'transferring'
+            || (status.indexOf('auto_') === 0 && status !== 'auto_complete');
     }
 
     function renderProgressSteps(state) {
@@ -253,11 +270,13 @@
         const databaseSent = progress.database_sent || 0;
         const percent = fileCount ? Math.min(100, Math.round((filesSent / fileCount) * 100)) : (databaseSent ? 5 : 0);
         const auto = state.auto_app || {};
+        const authenticated = !!auto.authenticated;
         const autoApp = auto.app || {};
         const targetWp = auto.target_wp_version || {};
         const liveConfig = auto.live_config || {};
 
         const appUrl = autoApp.url || '';
+        const dashboardUrl = autoApp.adminUrl || '';
 
         setText(statusText, state.status || 'idle');
         setText(destinationText, (state.destination && (state.destination.target || state.destination.rest)) || '-');
@@ -269,6 +288,13 @@
             progressBar.style.width = percent + '%';
         }
         setText(progressDetail, progressDetailText(state));
+        setText(failedMessage, state.error || 'The migration encountered an error.');
+        if (spinner) {
+            spinner.hidden = !migrationIsRunning(state);
+        }
+        if (transferSummary) {
+            transferSummary.hidden = progressPhase(state) !== 'transferring';
+        }
         setText(logsText, (state.logs || []).join('\n'));
         renderProgressSteps(state);
         if (autoAppText) {
@@ -294,15 +320,27 @@
                 appLink.href = appUrl;
             }
         }
+        if (dashboardLink) {
+            dashboardLink.hidden = !dashboardUrl;
+            if (dashboardUrl) {
+                dashboardLink.href = dashboardUrl;
+            }
+        }
         if (perishAtText) {
             const expires = formatDate(autoApp.willPerishAt);
             perishAtText.hidden = !expires;
             perishAtText.textContent = expires ? ' It is currently scheduled to disappear on ' + expires + '.' : '';
         }
+        if (temporaryWarning) {
+            temporaryWarning.hidden = authenticated;
+        }
+        if (connectAccountStep) {
+            connectAccountStep.hidden = authenticated;
+        }
 
         showPanel(migrationStep(state));
         if (state.error) {
-            showMessage(state.error, 'error');
+            showMessage(migrationStep(state) === 'failed' ? '' : state.error, 'error');
         } else if (state.status === 'auto_complete') {
             showMessage('Your Wasmer app is ready.', 'success');
         } else if (state.status === 'transfer_complete') {
@@ -319,7 +357,12 @@
             return false;
         }
         if (activeMigrationId === 'pending') {
-            return false;
+            const pendingMigrationId = migrationIdOf(state);
+            if (!pendingMigrationId) {
+                return false;
+            }
+            activeMigrationId = pendingMigrationId;
+            return true;
         }
         if (!activeMigrationId) {
             return true;
@@ -381,6 +424,8 @@
         startPolling();
         request('wasmer_migrate_auto', {
             graphql_url: autoGraphqlUrl ? autoGraphqlUrl.value : '',
+            token: autoToken ? autoToken.value : '',
+            app_name: autoAppName ? autoAppName.value.trim() : '',
             resume: resume ? '1' : '0'
         }).then(function (state) {
             if (!isResetting && generation === renderGeneration) {
@@ -448,6 +493,13 @@
         autoButton.addEventListener('click', function (event) {
             event.preventDefault();
             runAutoMigration('Wasmer is creating your new app and copying this site into it.', false);
+        });
+    }
+
+    if (retryButton) {
+        retryButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            runAutoMigration('Retrying your Wasmer migration from the last completed step.', true);
         });
     }
 
@@ -550,6 +602,9 @@
     }
     if (footerStartOverButton) {
         footerStartOverButton.addEventListener('click', clearState);
+    }
+    if (failedStartOverButton) {
+        failedStartOverButton.addEventListener('click', clearState);
     }
 
     const state = initialState();
