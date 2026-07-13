@@ -16,6 +16,8 @@ services:
 
   source:
     image: wordpress:${WP_VERSION:-6.8.2}-php${PHP_VERSION:-8.3}-apache
+    ports:
+      - "${SOURCE_PORT:-8080}:80"
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +39,8 @@ services:
 
   target:
     image: wordpress:${WP_VERSION:-6.8.2}-php${PHP_VERSION:-8.3}-apache
+    ports:
+      - "${TARGET_PORT:-8082}:80"
     depends_on:
       db:
         condition: service_healthy

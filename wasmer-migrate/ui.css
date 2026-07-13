@@ -7,6 +7,10 @@
     max-width: 980px;
 }
 
+.wasmer-migrate-page [hidden] {
+    display: none !important;
+}
+
 .wasmer-migrate-header {
     display: flex;
     justify-content: space-between;
@@ -89,6 +93,14 @@
     line-height: 1.3;
 }
 
+.wasmer-migrate-failed {
+    border-left: 4px solid #d63638;
+}
+
+.wasmer-migrate-failed h2 {
+    color: #8a2424;
+}
+
 .wasmer-migrate-panel p {
     max-width: 700px;
     color: #3c434a;
@@ -121,6 +133,35 @@
     font-weight: 700;
 }
 
+.wasmer-migrate-start-field {
+    width: min(100%, 520px);
+    text-align: left;
+}
+
+.wasmer-migrate-start-field span {
+    display: block;
+    margin-bottom: 5px;
+    color: #1d2327;
+    font-weight: 600;
+}
+
+.wasmer-migrate-start-field em {
+    color: var(--wasmer-muted);
+    font-style: normal;
+    font-weight: 400;
+}
+
+.wasmer-migrate-start-field input {
+    width: 100%;
+    min-height: 40px;
+}
+
+.wasmer-migrate-start-field small {
+    display: block;
+    margin-top: 5px;
+    color: var(--wasmer-muted);
+}
+
 .wasmer-migrate-panel .wasmer-migrate-start-copy {
     max-width: 620px;
     margin: 0;
@@ -146,6 +187,11 @@
 .wasmer-migrate-form-grid input {
     width: 100%;
     min-height: 36px;
+}
+
+.wasmer-migrate-site-unchanged {
+    display: block;
+    margin-top: 8px;
 }
 
 .wasmer-migrate-actions {
@@ -258,9 +304,34 @@
 }
 
 .wasmer-migrate-progress-detail {
+    display: flex;
+    align-items: center;
+    gap: 9px;
     margin: 10px 0 0;
     color: #3c434a;
     font-size: 14px;
+}
+
+.wasmer-migrate-spinner {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    border: 2px solid #c3c4c7;
+    border-top-color: var(--wasmer-blue);
+    border-radius: 50%;
+    animation: wasmer-migrate-spin 700ms linear infinite;
+}
+
+@keyframes wasmer-migrate-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wasmer-migrate-spinner {
+        animation-duration: 1400ms;
+    }
 }
 
 .wasmer-migrate-progress-bar {
@@ -303,6 +374,12 @@
     min-height: 40px;
     padding: 4px 20px;
     font-weight: 700;
+}
+
+.wasmer-migrate-ready-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .wasmer-migrate-warning {

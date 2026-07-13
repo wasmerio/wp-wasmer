@@ -172,7 +172,10 @@ function wasmer_import_create_session($ttl = 28800)
         'files' => [],
         'limits' => [
             'max_chunk_size' => (int) apply_filters('wasmer_import_max_chunk_size', 1024 * 1024),
-            'max_total_size' => (int) apply_filters('wasmer_import_max_total_size', 20 * 1024 * 1024 * 1024),
+            'max_total_size' => (int) apply_filters(
+                'wasmer_import_max_total_size',
+                PHP_INT_SIZE >= 8 ? 20 * 1024 * 1024 * 1024 : PHP_INT_MAX
+            ),
         ],
     ];
 

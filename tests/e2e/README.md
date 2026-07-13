@@ -17,6 +17,8 @@ source WP-CLI -> source WordPress runtime -> HTTP REST -> target WordPress webse
 
 No migration data is copied directly between containers by the test harness.
 
+The source site is published at `http://localhost:8080` and the target at `http://localhost:8082` by default. Set `SOURCE_PORT` or `TARGET_PORT` to use different host ports.
+
 Run locally:
 
 ```bash

@@ -206,12 +206,13 @@ After transfer completion, the destination import process:
 2. verifies transferred database and files;
 3. imports the source database through staging and backup table prefixes;
 4. preserves destination-specific Wasmer settings;
-5. copies staged `wp-content` files into the destination content directory;
-6. preserves the destination `wp-wasmer` plugin activation;
-7. removes `wasmer-migrate` from the imported active plugin list;
-8. validates active plugin and theme files;
-9. runs WordPress database upgrade routines when needed;
-10. marks the session complete or failed.
+5. retains source credentials and metadata when a destination user has the same login or email, while preserving destination-only users;
+6. copies staged `wp-content` files into the destination content directory;
+7. preserves the destination `wp-wasmer` plugin activation;
+8. removes `wasmer-migrate` from the imported active plugin list;
+9. validates active plugin and theme files;
+10. runs WordPress database upgrade routines when needed;
+11. marks the session complete or failed.
 
 WordPress core files are not migrated. Wasmer continues to control the core WordPress runtime.
 
@@ -239,6 +240,8 @@ wp wasmer-migrate resume
 wp wasmer-migrate cancel
 wp wasmer-migrate auto --graphql-url=<url> --token=<token> --owner=<owner> --region=<region>
 ```
+
+The automatic flow accepts a Wasmer app name and an optional Wasmer access token in both the admin screen and WP-CLI (`--app-name`). App names are normalized to URL-safe slugs and, when necessary, receive a numeric suffix to avoid a name collision. When supplied, the token authenticates app creation and every GraphQL operation used to wait for the deployment and run remote WordPress commands. The resulting app belongs to the existing Wasmer account and is non-perishable by default. Without a token, the existing temporary-app flow remains available and defaults to a two-hour lifetime.
 
 The admin screens and CLI commands share the same migration state and transfer implementation.
 

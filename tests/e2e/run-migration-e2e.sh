@@ -113,6 +113,7 @@ set_table_prefix target "$TARGET_TABLE_PREFIX"
 
 install_site source http://source "Wasmer Migration Source"
 install_site target http://target "Wasmer Migration Target"
+wp_target user update admin --user_pass=target-admin-pass
 
 target_wp_config_before="$(wp_config_hash target)"
 

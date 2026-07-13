@@ -41,8 +41,10 @@ function wasmer_migrate_public_state($state = null)
     $public['migration_id'] = (string) ($state['id'] ?? '');
     unset($public['run_token']);
     unset($public['destination']['token']);
-    $public['logs'] = !empty($state['id']) ? wasmer_migrate_read_logs($state['id']) : [];
+    unset($public['auto_app']['token']);
     $public['file_count'] = count($state['files'] ?? []);
+    unset($public['files'], $public['manifest'], $public['database']);
+    $public['logs'] = !empty($state['id']) ? wasmer_migrate_read_logs($state['id']) : [];
     return $public;
 }
 
@@ -177,6 +179,8 @@ function wasmer_migrate_ajax_auto()
     try {
         $result = wasmer_migrate_auto_app_import([
             'graphql_url' => wp_unslash($_POST['graphql_url'] ?? ''),
+            'token' => wp_unslash($_POST['token'] ?? ''),
+            'app_name' => sanitize_title(wp_unslash($_POST['app_name'] ?? '')),
             'resume' => $resume,
         ]);
     } finally {
@@ -273,8 +277,17 @@ function wasmer_migrate_admin_page()
         <div id="wasmer-migrate-message" class="notice inline" hidden></div>
         <section class="wasmer-migrate-panel" data-panel="auto">
             <div class="wasmer-migrate-start">
+                <label class="wasmer-migrate-start-field" for="wasmer-migrate-auto-app-name">
+                    <span>Wasmer app name</span>
+                    <input type="text" id="wasmer-migrate-auto-app-name" value="<?php echo esc_attr(wasmer_migrate_auto_app_name_from_domain()); ?>" maxlength="36" autocomplete="off" spellcheck="false" aria-describedby="wasmer-migrate-auto-app-name-help">
+                    <small id="wasmer-migrate-auto-app-name-help">Used in the app URL. Spaces and unsupported characters will be converted to hyphens.</small>
+                </label>
+                <label class="wasmer-migrate-start-field" for="wasmer-migrate-auto-token">
+                    <span>Wasmer access token <em>(optional)</em></span>
+                    <input type="password" id="wasmer-migrate-auto-token" autocomplete="off" spellcheck="false" placeholder="Paste a token to create the app in your account">
+                </label>
                 <button type="button" class="button button-primary wasmer-migrate-primary-action" id="wasmer-migrate-auto-start">Migrate to Wasmer</button>
-                <p class="wasmer-migrate-start-copy">Wasmer will create a temporary WordPress app for you and copy this site's content into it. Your current site will not be changed and will keep working as usual.</p>
+                <p class="wasmer-migrate-start-copy">With a token, Wasmer will create the WordPress app in your existing account. Without one, Wasmer will create a temporary app.<strong class="wasmer-migrate-site-unchanged">Your current site will not be changed and will keep working as usual.</strong></p>
                 <button type="button" class="button" id="wasmer-migrate-advanced-toggle" aria-expanded="false" aria-controls="wasmer-migrate-advanced">Advanced configuration</button>
             </div>
             <div class="wasmer-migrate-advanced" id="wasmer-migrate-advanced" aria-hidden="true">
@@ -293,19 +306,33 @@ function wasmer_migrate_admin_page()
                 <li data-progress-step="preparing"><span></span>Preparing data transfer</li>
                 <li data-progress-step="transferring"><span></span>Transferring data</li>
             </ol>
-            <p class="wasmer-migrate-progress-detail" id="wasmer-migrate-progress-detail">Starting migration...</p>
+            <p class="wasmer-migrate-progress-detail">
+                <span class="wasmer-migrate-spinner" id="wasmer-migrate-spinner" aria-hidden="true" hidden></span>
+                <span id="wasmer-migrate-progress-detail">Starting migration...</span>
+            </p>
             <div class="wasmer-migrate-progress-bar"><span id="wasmer-migrate-progress-bar"></span></div>
-            <div class="wasmer-migrate-summary">
+            <div class="wasmer-migrate-summary" id="wasmer-migrate-transfer-summary" hidden>
                 <div><strong>Database</strong><span id="wasmer-migrate-database">Not started</span></div>
                 <div><strong>Files</strong><span id="wasmer-migrate-files">0 / 0</span></div>
                 <div><strong>Data copied</strong><span id="wasmer-migrate-bytes">0 bytes</span></div>
             </div>
         </section>
+        <section class="wasmer-migrate-panel wasmer-migrate-failed" data-panel="failed" hidden>
+            <h2>Migration could not continue</h2>
+            <p id="wasmer-migrate-failed-message">The migration encountered an error.</p>
+            <p class="wasmer-migrate-actions">
+                <button type="button" class="button button-primary" id="wasmer-migrate-retry">Retry</button>
+                <button type="button" class="button" id="wasmer-migrate-failed-start-over">Start over</button>
+            </p>
+        </section>
         <section class="wasmer-migrate-panel" data-panel="done" hidden>
             <h2>App is ready</h2>
             <p id="wasmer-migrate-done-message">Your WordPress site has been copied to a new Wasmer app.</p>
-            <p><a class="button button-primary wasmer-migrate-app-link" id="wasmer-migrate-app-link" href="#" target="_blank" rel="noopener" hidden>Open your Wasmer app</a></p>
-            <div class="wasmer-migrate-warning">
+            <p class="wasmer-migrate-ready-actions">
+                <a class="button button-primary wasmer-migrate-app-link" id="wasmer-migrate-app-link" href="#" target="_blank" rel="noopener" hidden>Open your Wasmer app</a>
+                <a class="button" id="wasmer-migrate-dashboard-link" href="#" target="_blank" rel="noopener" hidden>Open in Wasmer Dashboard</a>
+            </p>
+            <div class="wasmer-migrate-warning" id="wasmer-migrate-temporary-warning">
                 <strong>Important:</strong> This app is temporary and will disappear soon unless you connect it to a Wasmer account.
                 <span id="wasmer-migrate-perish-at" hidden></span>
             </div>
@@ -313,7 +340,7 @@ function wasmer_migrate_admin_page()
                 <h3>Next steps</h3>
                 <ol>
                     <li>Open the new app and make sure your pages, posts, and media look right.</li>
-                    <li>Connect the app to a Wasmer account before the temporary app expires.</li>
+                    <li id="wasmer-migrate-connect-account-step">Connect the app to a Wasmer account before the temporary app expires.</li>
                     <li>When you are ready, update your domain or hosting settings to point visitors to the new app.</li>
                 </ol>
             </div>
