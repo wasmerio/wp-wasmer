@@ -47,4 +47,4 @@ For issues, feature requests, or contributions, visit the [GitHub repository](ht
 
 ## License
 
-GPL-3.0
+GPL-2.0-or-later
