@@ -24,6 +24,48 @@ function wasmer_import_session_file($session_id)
     return wasmer_import_sessions_dir() . '/' . sanitize_key($session_id) . '.json';
 }
 
+function wasmer_import_delete_path($path)
+{
+    if (!file_exists($path) && !is_link($path)) {
+        return true;
+    }
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    WP_Filesystem();
+    global $wp_filesystem;
+    return $wp_filesystem && $wp_filesystem->delete($path, true);
+}
+
+function wasmer_import_delete_session_artifacts($session_id, $delete_session = false)
+{
+    $session_id = sanitize_key((string) $session_id);
+    if ($session_id === '') {
+        return false;
+    }
+
+    $deleted = wasmer_import_delete_path(wasmer_import_session_dir($session_id));
+    if ($delete_session) {
+        $deleted = wasmer_import_delete_path(wasmer_import_session_file($session_id)) && $deleted;
+    }
+    return $deleted;
+}
+
+function wasmer_import_cleanup_stale_sessions($max_age = DAY_IN_SECONDS)
+{
+    $cutoff = time() - max(HOUR_IN_SECONDS, (int) $max_age);
+    foreach (wasmer_import_list_sessions() as $session) {
+        if ((int) ($session['updated'] ?? 0) >= $cutoff && (int) ($session['expires'] ?? 0) >= time()) {
+            continue;
+        }
+        wasmer_import_delete_session_artifacts($session['id'] ?? '', true);
+    }
+}
+
+function wasmer_import_delete_all_data()
+{
+    return wasmer_import_delete_path(wasmer_import_root_dir());
+}
+
 function wasmer_import_ensure_root()
 {
     $root = wasmer_import_root_dir();
@@ -153,6 +195,7 @@ function wasmer_import_new_session_id()
 
 function wasmer_import_create_session($ttl = 28800)
 {
+    wasmer_import_cleanup_stale_sessions();
     wasmer_import_ensure_root();
     $id = wasmer_import_new_session_id();
     $token = wasmer_import_random_token();

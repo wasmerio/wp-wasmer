@@ -245,7 +245,6 @@ function wasmer_get_liveconfig_data()
             'users' => [
                 'total' => $user_count['total_users'],
                 'admins' => $user_count['avail_roles']['administrator'] ?? 0,
-                'main_admin_id' => wasmer_get_user_id(""),
             ],
             'posts' => ['count' => wp_count_posts('post')->publish],
             'pages' => ['count' => wp_count_posts('page')->publish],
@@ -297,13 +296,7 @@ function wasmer_auto_login($args)
     $user_id       = wasmer_get_user_id($args['email']);
     $user          = get_user_by('ID', $user_id);
     if (!$user) {
-        wasmer_callback($args);
-
-        header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Location: ' . $redirect_page);
-        http_response_code(302);
-        exit;
+        return new WP_Error('wasmer_login_user_not_found', 'No matching WordPress administrator was found.', array('status' => 403));
     }
 
     $login_username = $user->user_login;
@@ -323,20 +316,15 @@ function wasmer_auto_login($args)
 
 function wasmer_get_user_id($email)
 {
-    $admins = get_users([
-        'role' => 'administrator',
-        'search' => '*' . $email . '*',
-        'search_columns' => ['user_email'],
-    ]);
-    if (isset($admins[0]->ID)) {
-        return $admins[0]->ID;
+    $email = sanitize_email((string) $email);
+    if ($email === '') {
+        return null;
     }
 
-    $admins = get_users(['role' => 'administrator']);
-    if (isset($admins[0]->ID)) {
-        return $admins[0]->ID;
+    $user = get_user_by('email', $email);
+    if ($user && user_can($user, 'manage_options')) {
+        return (int) $user->ID;
     }
-
     return null;
 }
 
@@ -377,6 +365,25 @@ function wasmer_graphql_query($url, $query, $variables, $authToken = null)
 
 
 
+function wasmer_liveconfig_permission_callback($request)
+{
+    if (!WASMER_API_TOKEN) {
+        return new WP_Error('wasmer_liveconfig_unavailable', 'Live configuration is unavailable.', ['status' => 503]);
+    }
+
+    $authorization = trim((string) $request->get_header('authorization'));
+    if (stripos($authorization, 'Bearer ') !== 0) {
+        return new WP_Error('wasmer_liveconfig_unauthorized', 'Authorization is required.', ['status' => 401]);
+    }
+
+    $token = trim(substr($authorization, 7));
+    if ($token === '' || !hash_equals((string) WASMER_API_TOKEN, $token)) {
+        return new WP_Error('wasmer_liveconfig_forbidden', 'Invalid authorization token.', ['status' => 403]);
+    }
+
+    return true;
+}
+
 function wasmer_liveconfig_callback($request)
 {
     $data = wasmer_get_liveconfig_data();
@@ -402,7 +409,7 @@ function wasmer_check_callback($request)
 
 function wasmer_magiclogin_callback($request)
 {
-    $token = $_GET['magiclogin'] ?? null;
+    $token = sanitize_text_field((string) $request->get_param('magiclogin'));
 
     if (!$token) {
         return new WP_Error('missing_token', 'Missing token', array('status' => 500));
@@ -422,6 +429,7 @@ function wasmer_magiclogin_callback($request)
         node(id: $appid) {
             ... on DeployApp {
                 id
+                viewerCan(action: DEPLOY_APP)
             }
         }
     }
@@ -435,7 +443,7 @@ function wasmer_magiclogin_callback($request)
     $viewer = $response['data']['viewer'] ?? null;
     $node = $response['data']['node'] ?? null;
 
-    if (!$viewer || !$node || !isset($node['id'])) {
+    if (!$viewer || !$node || !isset($node['id']) || empty($node['viewerCan'])) {
         return new WP_Error('invalid_token', 'Invalid or expired token', array('status' => 403));
     }
 

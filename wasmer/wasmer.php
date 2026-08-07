@@ -54,15 +54,20 @@ if (WASMER_CLI) {
 // });
 
 add_action('rest_api_init', function () {
-  register_rest_route('wasmer/v1', '/liveconfig', array(
-    'methods' => 'GET',
-    'callback' => 'wasmer_liveconfig_callback',
-    'permission_callback' => '__return_true',
-  ));
   register_rest_route('wasmer/v1', '/check', array(
     'methods' => 'GET',
     'callback' => 'wasmer_check_callback',
     'permission_callback' => '__return_true',
+  ));
+
+  if (!wasmer_is_managed_environment()) {
+    return;
+  }
+
+  register_rest_route('wasmer/v1', '/liveconfig', array(
+    'methods' => 'GET',
+    'callback' => 'wasmer_liveconfig_callback',
+    'permission_callback' => 'wasmer_liveconfig_permission_callback',
   ));
   register_rest_route('wasmer/v1', '/magiclogin', array(
     'methods' => 'GET',
@@ -93,35 +98,14 @@ function wasmer_plugin_deactivate()
   // Code to run on deactivation, e.g., cleaning up options.
 }
 
-/**
- * Bypass Password-Protected Plugins to allow for REST API exceptions.
- *
- * @param mixed $result WP_Error if authentication error, null if authentication
- *                      method wasn't used, true if authentication succeeded.
- */
-function wasmer_bypass_rest_api_auth_errors($result)
-{
-
-  // Skip if request is authenticated
-  if (!empty($result)) {
-    return $result;
-  }
-
-  if (strpos((string) get_query_var('rest_route'), '/wasmer/v1/') === 0) {
-    return true;
-  }
-
-  return null;
-}
-add_filter('rest_authentication_errors', 'wasmer_bypass_rest_api_auth_errors', 20);
-
-
 /* -------------------------------------------------------------------------
  *  Stop WordPress from showing or fetching core updates
  * ---------------------------------------------------------------------- */
 
-// Disable background update scheduler (automatic updates).
-add_filter('automatic_updater_disabled', '__return_true', PHP_INT_MAX);
+// Wasmer-managed apps receive core updates from the hosting platform.
+if (wasmer_is_managed_environment()) {
+  add_filter('auto_update_core', '__return_false', PHP_INT_MAX);
+}
 
 /* -------------------------------------------------------------------------
  *  Block manual attempts to update the core and return a hard error
@@ -152,7 +136,9 @@ function wasmer_dcu_block_core_download($reply, $package, $upgrader)
   // For theme/plugin uploads we allow normal behaviour.
   return $reply;
 }
-add_filter('upgrader_pre_download', 'wasmer_dcu_block_core_download', 10, 3);
+if (wasmer_is_managed_environment()) {
+  add_filter('upgrader_pre_download', 'wasmer_dcu_block_core_download', 10, 3);
+}
 
 /* -------------------------------------------------------------------------
  *  UX: Warn administrators on the Updates screen
@@ -213,7 +199,9 @@ function wasmer_dcu_admin_notice()
     }
   }
 }
-add_action('admin_notices', 'wasmer_dcu_admin_notice', 1);
+if (wasmer_is_managed_environment()) {
+  add_action('admin_notices', 'wasmer_dcu_admin_notice', 1);
+}
 
 /* -------------------------------------------------------------------------
  *  Allows .htaccess working well in Wasmer
@@ -230,13 +218,15 @@ if (PHP_SAPI === 'phpix') {
  * ---------------------------------------------------------------------- */
 
 // Add a test to the site status page to indicate that WordPress core updates are managed by the host
-add_filter('site_status_tests', function ($tests) {
-  if (isset($tests['direct']['background_updates'])) {
-    $tests['direct']['background_updates']['test'] = 'wasmer_host_managed_background_updates';
-  }
+if (wasmer_is_managed_environment()) {
+  add_filter('site_status_tests', function ($tests) {
+    if (isset($tests['direct']['background_updates'])) {
+      $tests['direct']['background_updates']['test'] = 'wasmer_host_managed_background_updates';
+    }
 
-  return $tests;
-});
+    return $tests;
+  });
+}
 
 function wasmer_host_managed_background_updates()
 {

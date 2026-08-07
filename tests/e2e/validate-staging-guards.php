@@ -66,11 +66,10 @@ if ($kind === 'import') {
     $session_root = $root . '/' . sanitize_key($id);
     wasmer_e2e_assert_guarded_dir($root);
     wasmer_e2e_assert_guarded_dir($root . '/sessions');
-    wasmer_e2e_assert_guarded_dir($session_root);
-    wasmer_e2e_assert_guarded_dir($session_root . '/db');
-    wasmer_e2e_assert_guarded_dir($session_root . '/files');
-    wasmer_e2e_assert_guarded_dir($session_root . '/logs');
-    WP_CLI::success('Validated import staging guards.');
+    if (file_exists($session_root)) {
+        wasmer_e2e_error('Completed import artifacts were not removed: ' . $session_root);
+    }
+    WP_CLI::success('Validated import staging cleanup.');
     return;
 }
 
@@ -83,7 +82,10 @@ if ($kind === 'migrate') {
     $root = trailingslashit(WP_CONTENT_DIR) . 'wasmer-migrate';
     wasmer_e2e_assert_guarded_dir($root);
     wasmer_e2e_assert_guarded_tree($root . '/' . sanitize_key($id));
-    WP_CLI::success('Validated migrate staging guards.');
+    if (file_exists($root . '/' . sanitize_key($id) . '/database.sql')) {
+        wasmer_e2e_error('Transferred database export was not removed.');
+    }
+    WP_CLI::success('Validated migrate staging cleanup and guards.');
     return;
 }
 

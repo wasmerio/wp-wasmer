@@ -989,6 +989,8 @@ function wasmer_import_start($session_id)
     $session['completed'] = time();
     wasmer_import_save_session($session);
     wasmer_import_log($session_id, 'Import completed.');
+    $public = wasmer_import_public_session($session);
+    wasmer_import_delete_session_artifacts($session_id);
 
-    return wasmer_import_public_session($session);
+    return $public;
 }

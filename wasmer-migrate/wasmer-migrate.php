@@ -32,6 +32,15 @@ require_once __DIR__ . '/transfer-client.php';
 require_once __DIR__ . '/auto-app.php';
 require_once __DIR__ . '/admin-page.php';
 
+function wasmer_migrate_uninstall()
+{
+    wasmer_migrate_delete_all_data();
+    delete_option(wasmer_migrate_state_key());
+    delete_option(wasmer_migrate_cancelled_runs_key());
+    delete_option(wasmer_migrate_auto_lock_key());
+}
+register_uninstall_hook(__FILE__, 'wasmer_migrate_uninstall');
+
 if (defined('WP_CLI') && WP_CLI) {
     class Wasmer_Migrate_Command
     {

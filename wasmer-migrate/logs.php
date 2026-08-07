@@ -13,6 +13,7 @@ function wasmer_migrate_log($migration_id, $message, $context = [])
     if (!wp_mkdir_p($dir)) {
         return;
     }
+    wasmer_migrate_write_access_guards_recursive(wasmer_migrate_root_dir(), $dir);
     $context = is_array($context) ? $context : [];
     unset($context['token'], $context['code'], $context['authorization']);
     $line = wp_json_encode([

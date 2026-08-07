@@ -32,6 +32,15 @@ define( 'WP_WASMER_PLUGIN_MAIN_FILE', __FILE__ );
 define( 'WP_WASMER_PLUGIN_DIR_PATH', plugin_dir_path( WP_WASMER_PLUGIN_MAIN_FILE ) );
 define( 'WP_WASMER_PLUGIN_DIR_URL', plugin_dir_url( WP_WASMER_PLUGIN_MAIN_FILE ) );
 
+function wasmer_uninstall()
+{
+    require_once __DIR__ . '/wasmer/migrate-import/sessions.php';
+    wasmer_import_delete_all_data();
+    delete_option('wasmer_cdn_auto_purge_enabled');
+    delete_option('wasmer_cdn_cache_last_purged');
+}
+register_uninstall_hook(__FILE__, 'wasmer_uninstall');
+
 
 function wp_wasmer_load() {
 	// Check for supported PHP version.

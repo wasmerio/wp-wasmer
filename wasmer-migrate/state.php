@@ -100,6 +100,8 @@ function wasmer_migrate_replace_state_if_current($state, $current)
 
 function wasmer_migrate_begin_run()
 {
+    $previous = wasmer_migrate_get_state();
+    wasmer_migrate_delete_run_dir($previous['id'] ?? '');
     $state = wasmer_migrate_fresh_state();
     $state['id'] = wasmer_migrate_new_id();
     $state['resume_allowed'] = false;
@@ -193,5 +195,6 @@ function wasmer_migrate_reset_state()
     wp_cache_delete(wasmer_migrate_state_key(), 'options');
     $state = wasmer_migrate_get_state();
     wasmer_migrate_cancel_run($state['id'] ?? '', $state['run_token'] ?? '');
+    wasmer_migrate_delete_run_dir($state['id'] ?? '');
     wasmer_migrate_save_state(wasmer_migrate_fresh_state());
 }

@@ -89,8 +89,12 @@ function createMockGraphQLServer() {
           interface Node {
             id: ID!
           }
+          enum OwnerAction {
+            DEPLOY_APP
+          }
           type DeployApp implements Node {
             id: ID!
+            viewerCan(action: OwnerAction!): Boolean!
           }
         `,
         resolvers: {
@@ -99,7 +103,7 @@ function createMockGraphQLServer() {
               if (
                 context.request.headers.get("authorization") == "Bearer 123"
               ) {
-                return { email: "test@test.com" };
+                return { email: "admin@localhost.com" };
               }
               return null;
             },
@@ -107,7 +111,7 @@ function createMockGraphQLServer() {
               if (
                 context.request.headers.get("authorization") == "Bearer 123"
               ) {
-                return { id: "123", __typename: "DeployApp" };
+                return { id: "123", viewerCan: true, __typename: "DeployApp" };
               }
               return null;
             },
@@ -232,7 +236,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           `${SERVER_URL}/?rest_route=/wasmer/v1/magiclogin&magiclogin=123`,
           { redirect: "manual" }
         );
-        assert.equal(req.status, 302, "Expected status 302");
+        assert.equal(req.status, 302, `Expected status 302: ${await req.clone().text()}`);
         assert.match(
           req.headers.get("cache-control"),
           /no-cache/i,
@@ -292,8 +296,14 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
     });
 
     it("Liveconfig works", async () => {
-      const req = await fetch(
+      const unauthorized = await fetch(
         `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`
+      );
+      assert.equal(unauthorized.status, 401, "Expected authentication to be required");
+
+      const req = await fetch(
+        `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
+        { headers: { Authorization: "Bearer api-token-123" } }
       );
       assert.equal(req.status, 200, "Expected status 200");
       assert.match(
@@ -422,7 +432,6 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           url: "http://localhost:8080",
           users: {
             admins: 1,
-            main_admin_id: 1,
             total: 1,
           },
           version: WP_VERSION,

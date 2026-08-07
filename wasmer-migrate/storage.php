@@ -14,6 +14,33 @@ function wasmer_migrate_run_dir($migration_id)
     return wasmer_migrate_root_dir() . '/' . sanitize_key($migration_id);
 }
 
+function wasmer_migrate_delete_path($path)
+{
+    if (!file_exists($path) && !is_link($path)) {
+        return true;
+    }
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    WP_Filesystem();
+    global $wp_filesystem;
+    return $wp_filesystem && $wp_filesystem->delete($path, true);
+}
+
+function wasmer_migrate_delete_run_dir($migration_id)
+{
+    $migration_id = sanitize_key((string) $migration_id);
+    if ($migration_id === '') {
+        return false;
+    }
+
+    return wasmer_migrate_delete_path(wasmer_migrate_run_dir($migration_id));
+}
+
+function wasmer_migrate_delete_all_data()
+{
+    return wasmer_migrate_delete_path(wasmer_migrate_root_dir());
+}
+
 function wasmer_migrate_ensure_run_dir($migration_id)
 {
     $root = wasmer_migrate_root_dir();

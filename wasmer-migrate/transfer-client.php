@@ -244,12 +244,15 @@ function wasmer_migrate_transfer($run_id = '', $run_token = '')
     $state['status'] = 'transfer_complete';
     unset($state['destination']['token']);
     $state['code'] = null;
+    $state['database'] = null;
+    $state['files'] = [];
     $saved = ($run_id !== '' && $run_token !== '')
         ? wasmer_migrate_save_state_for_run($state, $run_id, $run_token)
         : wasmer_migrate_save_state($state);
     if (is_wp_error($saved)) {
         return $saved;
     }
+    wasmer_migrate_delete_run_dir($state['id']);
     if ($run_id !== '' && $run_token !== '') {
         wasmer_migrate_log_for_run($state['id'], $run_token, 'Transfer complete.');
     } else {

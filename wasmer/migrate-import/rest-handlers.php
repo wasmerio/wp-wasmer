@@ -275,5 +275,7 @@ function wasmer_import_rest_cancel($request)
     $session['cancelled'] = time();
     wasmer_import_save_session($session);
     wasmer_import_log($session['id'], 'Import session cancelled.');
-    return wasmer_import_public_session($session);
+    $public = wasmer_import_public_session($session);
+    wasmer_import_delete_session_artifacts($session['id']);
+    return $public;
 }
