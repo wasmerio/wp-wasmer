@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: WP Wasmer
+ * Plugin Name: Wasmer
  * Plugin URI: https://github.com/wasmerio/wp-wasmer
  * GitHub Plugin URI: https://github.com/wasmerio/wp-wasmer
  * Description: Wasmer Plugin for WordPress
@@ -8,9 +8,8 @@
  * Author URI: https://wasmer.io
  * Version: 0.4.5
  * Text Domain: wasmer
- * Domain Path: /languages/
  * Requires at least: 6.0
- * Tested up to: 6.8
+ * Tested up to: 7.0
  * Requires PHP: 7.4
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html

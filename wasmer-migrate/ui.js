@@ -10,6 +10,7 @@
     const message = document.getElementById('wasmer-migrate-message');
     const codeField = document.getElementById('wasmer-migrate-import-code');
     const autoButton = document.getElementById('wasmer-migrate-auto-start');
+    const consentCheckbox = document.getElementById('wasmer-migrate-consent');
     const advancedToggle = document.getElementById('wasmer-migrate-advanced-toggle');
     const advancedPanel = document.getElementById('wasmer-migrate-advanced');
     const useCodeButton = document.getElementById('wasmer-migrate-use-code');
@@ -426,6 +427,7 @@
             graphql_url: autoGraphqlUrl ? autoGraphqlUrl.value : '',
             token: autoToken ? autoToken.value : '',
             app_name: autoAppName ? autoAppName.value.trim() : '',
+            consent: consentCheckbox && consentCheckbox.checked ? '1' : '0',
             resume: resume ? '1' : '0'
         }).then(function (state) {
             if (!isResetting && generation === renderGeneration) {
@@ -441,8 +443,14 @@
         }).finally(function () {
             if (!isResetting && generation === renderGeneration) {
                 autoRequestRunning = false;
-                autoButton.disabled = false;
+                autoButton.disabled = !!consentCheckbox && !consentCheckbox.checked;
             }
+        });
+    }
+
+    if (autoButton && consentCheckbox) {
+        consentCheckbox.addEventListener('change', function () {
+            autoButton.disabled = !consentCheckbox.checked;
         });
     }
 

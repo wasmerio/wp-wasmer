@@ -1,12 +1,14 @@
 <?php
 /**
  * Plugin Name: Wasmer Migrate
+ * Plugin URI: https://github.com/wasmerio/wp-wasmer
  * Description: Migrate a WordPress site into a Wasmer WordPress app.
  * Author: Wasmer
  * Author URI: https://wasmer.io
  * Version: 0.1.0
  * Text Domain: wasmer-migrate
  * Requires at least: 6.0
+ * Tested up to: 7.0
  * Requires PHP: 7.4
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html

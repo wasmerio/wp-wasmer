@@ -167,6 +167,10 @@ function wasmer_migrate_ajax_auto()
     $state = wasmer_migrate_get_state();
     $resume_raw = isset($_POST['resume']) ? wp_unslash($_POST['resume']) : false;
     $resume = filter_var($resume_raw, FILTER_VALIDATE_BOOLEAN);
+    $consent = isset($_POST['consent']) ? sanitize_text_field(wp_unslash($_POST['consent'])) : '';
+    if (!$resume && $consent !== '1') {
+        wp_send_json_error(['message' => 'Confirm the migration data transfer before continuing.'], 400);
+    }
     if (!$resume && wasmer_migrate_auto_status_is_running($state['status'] ?? '')) {
         wp_send_json_success(wasmer_migrate_public_state($state));
     }
@@ -286,7 +290,11 @@ function wasmer_migrate_admin_page()
                     <span>Wasmer access token <em>(optional)</em></span>
                     <input type="password" id="wasmer-migrate-auto-token" autocomplete="off" spellcheck="false" placeholder="Paste a token to create the app in your account">
                 </label>
-                <button type="button" class="button button-primary wasmer-migrate-primary-action" id="wasmer-migrate-auto-start">Migrate to Wasmer</button>
+                <label class="wasmer-migrate-start-copy" for="wasmer-migrate-consent">
+                    <input type="checkbox" id="wasmer-migrate-consent">
+                    I understand that Wasmer Migrate will send the complete site database (including user records and password hashes), uploads, plugins, and themes to Wasmer to create the destination site. See the <a href="https://wasmer.io/terms" target="_blank" rel="noopener noreferrer">Wasmer Terms</a> and <a href="https://wasmer.io/policies/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                </label>
+                <button type="button" class="button button-primary wasmer-migrate-primary-action" id="wasmer-migrate-auto-start" disabled>Migrate to Wasmer</button>
                 <p class="wasmer-migrate-start-copy">With a token, Wasmer will create the WordPress app in your existing account. Without one, Wasmer will create a temporary app.<strong class="wasmer-migrate-site-unchanged">Your current site will not be changed and will keep working as usual.</strong></p>
                 <button type="button" class="button" id="wasmer-migrate-advanced-toggle" aria-expanded="false" aria-controls="wasmer-migrate-advanced">Advanced configuration</button>
             </div>
