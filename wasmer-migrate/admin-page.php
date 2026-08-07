@@ -340,9 +340,13 @@ function wasmer_migrate_admin_page()
                 <a class="button button-primary wasmer-migrate-app-link" id="wasmer-migrate-app-link" href="#" target="_blank" rel="noopener" hidden>Open your Wasmer app</a>
                 <a class="button" id="wasmer-migrate-dashboard-link" href="#" target="_blank" rel="noopener" hidden>Open in Wasmer Dashboard</a>
             </p>
-            <div class="wasmer-migrate-warning" id="wasmer-migrate-temporary-warning">
-                <strong>Important:</strong> This app is temporary and will disappear soon unless you connect it to a Wasmer account.
-                <span id="wasmer-migrate-perish-at" hidden></span>
+            <div class="wasmer-migrate-warning" id="wasmer-migrate-temporary-warning" hidden>
+                <p class="wasmer-migrate-warning-title">
+                    <strong>This app is temporary and will expire.</strong>
+                    <span id="wasmer-migrate-perish-at" hidden></span>
+                </p>
+                <p>Claim it with a Wasmer account now. If you do not claim it before it expires, the app and the migrated site will be deleted.</p>
+                <a class="button button-primary wasmer-migrate-claim-button" id="wasmer-migrate-claim-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Claim app now to prevent deletion</a>
             </div>
             <div class="wasmer-migrate-next">
                 <h3>Next steps</h3>

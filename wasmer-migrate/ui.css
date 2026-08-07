@@ -393,6 +393,28 @@
     line-height: 1.5;
 }
 
+.wasmer-migrate-warning p {
+    margin: 0 0 12px;
+    color: #1d2327;
+}
+
+.wasmer-migrate-warning .wasmer-migrate-warning-title {
+    font-size: 16px;
+}
+
+.wasmer-migrate-claim-button.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 7px 26px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+}
+
 .wasmer-migrate-next {
     max-width: 700px;
     margin: 18px 0;

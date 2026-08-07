@@ -46,6 +46,7 @@
     const dashboardLink = document.getElementById('wasmer-migrate-dashboard-link');
     const perishAtText = document.getElementById('wasmer-migrate-perish-at');
     const temporaryWarning = document.getElementById('wasmer-migrate-temporary-warning');
+    const claimLink = document.getElementById('wasmer-migrate-claim-link');
     const connectAccountStep = document.getElementById('wasmer-migrate-connect-account-step');
     let pollTimer = null;
     let autoRequestRunning = false;
@@ -229,6 +230,24 @@
         });
     }
 
+    function claimAppUrl(auto, app) {
+        if (!app.id) {
+            return '';
+        }
+        try {
+            const url = new URL(app.adminUrl || auto.graphql_url);
+            if (!app.adminUrl) {
+                url.hostname = url.hostname.replace(/^registry\./, '');
+            }
+            url.pathname = '/apps/claim/' + encodeURIComponent(app.id);
+            url.search = '';
+            url.hash = '';
+            return url.toString();
+        } catch (error) {
+            return '';
+        }
+    }
+
     function setText(element, value) {
         if (element) {
             element.textContent = value;
@@ -278,6 +297,8 @@
 
         const appUrl = autoApp.url || '';
         const dashboardUrl = autoApp.adminUrl || '';
+        const temporary = !authenticated && !!(autoApp.willPerishAt || auto.perish_at);
+        const claimUrl = temporary ? claimAppUrl(auto, autoApp) : '';
 
         setText(statusText, state.status || 'idle');
         setText(destinationText, (state.destination && (state.destination.target || state.destination.rest)) || '-');
@@ -333,10 +354,16 @@
             perishAtText.textContent = expires ? ' It is currently scheduled to disappear on ' + expires + '.' : '';
         }
         if (temporaryWarning) {
-            temporaryWarning.hidden = authenticated;
+            temporaryWarning.hidden = !temporary;
+        }
+        if (claimLink) {
+            claimLink.hidden = !claimUrl;
+            if (claimUrl) {
+                claimLink.href = claimUrl;
+            }
         }
         if (connectAccountStep) {
-            connectAccountStep.hidden = authenticated;
+            connectAccountStep.hidden = !temporary;
         }
 
         showPanel(migrationStep(state));
