@@ -1,5 +1,10 @@
-wasmer/tests/ export-ignore
-docs/ export-ignore
-.github/ export-ignore
-.gitattributes export-ignore
-README.md export-ignore
+/.github export-ignore
+/.research export-ignore
+/docs export-ignore
+/scripts export-ignore
+/tests export-ignore
+/wasmer-migrate export-ignore
+/wasmer/tests export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/README.md export-ignore
