@@ -302,6 +302,7 @@ function wasmer_auto_login($args)
     $login_username = $user->user_login;
     wp_set_current_user($user_id, $login_username);
     wp_set_auth_cookie($user_id);
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Fires the documented WordPress core login hook.
     do_action('wp_login', $login_username, $user);
     do_action('wasmer_autologin', $args);
 

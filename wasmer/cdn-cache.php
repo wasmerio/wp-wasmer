@@ -59,7 +59,7 @@ function wasmer_cdn_purge_cache()
         update_option('wasmer_cdn_cache_last_purged', time(), false);
         do_action('wasmer_cdn_cache_purged');
     } else {
-        error_log('wp-wasmer: CDN cache purge failed: ' . wp_json_encode($response));
+        do_action('wasmer_cdn_cache_purge_failed', $response);
     }
 
     return $success;
@@ -214,7 +214,7 @@ add_action('admin_post_wasmer_purge_cdn_cache', 'wasmer_cdn_handle_manual_purge'
 function wasmer_cdn_handle_manual_purge()
 {
     if (!current_user_can('manage_options')) {
-        wp_die(__('You are not allowed to purge the CDN cache.'), '', array('response' => 403));
+        wp_die(esc_html__('You are not allowed to purge the CDN cache.', 'wasmer'), '', array('response' => 403));
     }
     check_admin_referer('wasmer_purge_cdn_cache');
 
@@ -232,7 +232,7 @@ add_action('admin_post_wasmer_cdn_save_settings', 'wasmer_cdn_handle_save_settin
 function wasmer_cdn_handle_save_settings()
 {
     if (!current_user_can('manage_options')) {
-        wp_die(__('You are not allowed to change CDN cache settings.'), '', array('response' => 403));
+        wp_die(esc_html__('You are not allowed to change CDN cache settings.', 'wasmer'), '', array('response' => 403));
     }
     check_admin_referer('wasmer_cdn_save_settings');
 
@@ -272,7 +272,7 @@ function wasmer_cdn_cache_admin_page()
     <div class="wrap wasmer-cdn-page">
         <div class="wasmer-cdn-header">
             <h1>
-                <?php echo wasmer_icon(); ?> CDN Cache
+                <?php echo wp_kses(wasmer_icon(), wasmer_svg_kses_allowed_html()); ?> CDN Cache
                 <?php if ($enabled) : ?>
                     <span class="wasmer-cdn-status is-active">Active</span>
                 <?php else : ?>
@@ -356,24 +356,30 @@ function wasmer_cdn_cache_admin_page()
 add_action('admin_notices', 'wasmer_cdn_purge_admin_notice');
 function wasmer_cdn_purge_admin_notice()
 {
-    if (isset($_GET['wasmer-cdn-settings-saved'])) {
+    $settings_saved = isset($_GET['wasmer-cdn-settings-saved'])
+        ? sanitize_key(wp_unslash($_GET['wasmer-cdn-settings-saved']))
+        : '';
+    if ($settings_saved !== '') {
         echo '<div class="notice notice-success is-dismissible"><p>' .
-            esc_html__('CDN cache settings saved.') .
+            esc_html__('CDN cache settings saved.', 'wasmer') .
             '</p></div>';
         return;
     }
 
-    if (!isset($_GET['wasmer-cdn-purged'])) {
+    $purged = isset($_GET['wasmer-cdn-purged'])
+        ? sanitize_key(wp_unslash($_GET['wasmer-cdn-purged']))
+        : '';
+    if ($purged === '') {
         return;
     }
 
-    if ('1' === $_GET['wasmer-cdn-purged']) {
+    if ('1' === $purged) {
         echo '<div class="notice notice-success is-dismissible"><p>' .
-            esc_html__('Wasmer CDN cache purged.') .
+            esc_html__('Wasmer CDN cache purged.', 'wasmer') .
             '</p></div>';
     } else {
         echo '<div class="notice notice-error is-dismissible"><p>' .
-            esc_html__('Wasmer CDN cache purge failed. Please try again or check the site logs.') .
+            esc_html__('Wasmer CDN cache purge failed. Please try again or check the site logs.', 'wasmer') .
             '</p></div>';
     }
 }

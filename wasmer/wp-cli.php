@@ -239,8 +239,7 @@ class Wasmer_Import_Command
             if (($session['updated'] ?? 0) > $cutoff) {
                 continue;
             }
-            $this->delete_dir(wasmer_import_session_dir($session['id']));
-            @unlink(wasmer_import_session_file($session['id']));
+            wasmer_import_delete_session_artifacts($session['id'], true);
             $removed++;
         }
         WP_CLI::success('Removed ' . $removed . ' import session(s).');
@@ -265,20 +264,6 @@ class Wasmer_Import_Command
         return 8 * HOUR_IN_SECONDS;
     }
 
-    private function delete_dir($dir)
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-        foreach ($iterator as $item) {
-            $item->isDir() ? rmdir($item->getPathname()) : unlink($item->getPathname());
-        }
-        rmdir($dir);
-    }
 }
 
 WP_CLI::add_command('wasmer', 'Wasmer_Command');

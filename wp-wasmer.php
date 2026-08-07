@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Wasmer
+ * Plugin Name: Wasmer Hosting Integration
  * Plugin URI: https://github.com/wasmerio/wp-wasmer
  * GitHub Plugin URI: https://github.com/wasmerio/wp-wasmer
- * Description: Wasmer Plugin for WordPress
+ * Description: Integrates WordPress sites hosted on Wasmer with CDN cache controls, managed updates, dashboard access, and site migrations.
  * Author: Wasmer
  * Author URI: https://wasmer.io
  * Version: 0.4.5
@@ -35,23 +35,30 @@ function wasmer_uninstall()
 {
     require_once __DIR__ . '/wasmer/migrate-import/sessions.php';
     wasmer_import_delete_all_data();
+    wp_clear_scheduled_hook('wasmer_import_cleanup_event');
     delete_option('wasmer_cdn_auto_purge_enabled');
     delete_option('wasmer_cdn_cache_last_purged');
 }
 register_uninstall_hook(__FILE__, 'wasmer_uninstall');
 
+function wasmer_deactivate()
+{
+    wp_clear_scheduled_hook('wasmer_import_cleanup_event');
+}
+register_deactivation_hook(__FILE__, 'wasmer_deactivate');
 
-function wp_wasmer_load() {
+
+function wasmer_load() {
 	// Check for supported PHP version.
 	if ( version_compare( phpversion(), WP_WASMER_PLUGIN_MINIMUM_PHP, '<' ) ) {
-		add_action( 'admin_notices', 'wp_wasmer_display_php_version_notice' );
+		add_action( 'admin_notices', 'wasmer_display_php_version_notice' );
 		return;
 	}
 
 	require_once __DIR__ . '/wasmer/wasmer.php';
 }
 
-function wp_wasmer_display_php_version_notice() {
+function wasmer_display_php_version_notice() {
 	echo '<div class="notice notice-error"><p>';
 	printf(
 		/* translators: 1: required version, 2: currently used version */
@@ -62,4 +69,4 @@ function wp_wasmer_display_php_version_notice() {
 	echo '</p></div>';
 }
 
-wp_wasmer_load();
+wasmer_load();

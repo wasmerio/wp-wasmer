@@ -174,7 +174,7 @@ function wasmer_import_admin_page()
     <div class="wrap wasmer-import-page">
         <div class="wasmer-import-header">
             <div>
-                <h1><?php echo wasmer_icon(); ?> Import Site</h1>
+                <h1><?php echo wp_kses(wasmer_icon(), wasmer_svg_kses_allowed_html()); ?> Import Site</h1>
                 <p>Move an existing WordPress site into this Wasmer app.</p>
             </div>
         </div>

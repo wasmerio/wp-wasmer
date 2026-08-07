@@ -8,11 +8,11 @@ Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Copies a WordPress site into a new Wasmer WordPress app.
+Migrate a complete WordPress site to Wasmer, including its database, uploads, plugins, and themes.
 
 == Description ==
 
-Wasmer Migrate lets an administrator create a Wasmer WordPress app and copy the current site into it. An optional Wasmer access token creates the app in an existing account. Without a token, the plugin creates a perishable app that expires after approximately two hours unless it is claimed.
+Wasmer Migrate copies an existing WordPress site to the Wasmer hosting platform. It creates a Wasmer WordPress app and transfers the complete database, uploads, plugins, and themes. An optional Wasmer access token creates the app in an existing account. Without a token, the plugin creates a perishable app that expires after approximately two hours unless it is claimed.
 
 The source site remains online and unchanged. Temporary export files are access-guarded and removed after transfer, reset, or uninstall.
 
@@ -60,4 +60,3 @@ It reads and exports the source site's content and files. The source continues t
 * Initial WordPress.org release.
 * Create account-owned or perishable Wasmer apps and transfer the complete site.
 * Use perishable-app command tokens for destination setup.
-

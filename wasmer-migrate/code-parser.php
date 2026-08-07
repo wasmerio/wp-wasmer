@@ -44,7 +44,7 @@ function wasmer_migrate_parse_import_code($code)
 
     $is_local_environment = function_exists('wp_get_environment_type')
         && in_array(wp_get_environment_type(), ['local', 'development'], true);
-    $rest_host = parse_url($payload['rest'], PHP_URL_HOST);
+    $rest_host = wp_parse_url($payload['rest'], PHP_URL_HOST);
     $is_docker_local_host = is_string($rest_host) && strpos($rest_host, '.') === false;
     if (
         strpos($payload['rest'], 'https://') !== 0

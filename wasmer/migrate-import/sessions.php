@@ -61,6 +61,15 @@ function wasmer_import_cleanup_stale_sessions($max_age = DAY_IN_SECONDS)
     }
 }
 
+function wasmer_import_schedule_cleanup()
+{
+    if (!wp_next_scheduled('wasmer_import_cleanup_event')) {
+        wp_schedule_event(time() + HOUR_IN_SECONDS, 'hourly', 'wasmer_import_cleanup_event');
+    }
+}
+add_action('init', 'wasmer_import_schedule_cleanup');
+add_action('wasmer_import_cleanup_event', 'wasmer_import_cleanup_stale_sessions');
+
 function wasmer_import_delete_all_data()
 {
     return wasmer_import_delete_path(wasmer_import_root_dir());

@@ -82,7 +82,7 @@ function wasmer_migrate_send_file($destination, $kind, $path, $absolute, $chunk_
 {
     $size = filesize($absolute);
     $final_hash = hash_file('sha256', $absolute);
-    $handle = fopen($absolute, 'rb');
+    $handle = wasmer_migrate_stream_open($absolute, 'rb');
     if (!$handle) {
         return new WP_Error('wasmer_migrate_open_failed', 'Could not open export file.');
     }
@@ -90,10 +90,10 @@ function wasmer_migrate_send_file($destination, $kind, $path, $absolute, $chunk_
     $offset = 0;
     while (!feof($handle)) {
         if ($run_id !== '' && $run_token !== '' && !wasmer_migrate_is_active_run($run_id, $run_token)) {
-            fclose($handle);
+            wasmer_migrate_stream_close($handle);
             return wasmer_migrate_stale_run_error();
         }
-        $data = fread($handle, $chunk_size);
+        $data = wasmer_migrate_stream_read($handle, $chunk_size);
         if ($data === '' || $data === false) {
             break;
         }
@@ -113,12 +113,12 @@ function wasmer_migrate_send_file($destination, $kind, $path, $absolute, $chunk_
         $attempt = 0;
         do {
             if ($run_id !== '' && $run_token !== '' && !wasmer_migrate_is_active_run($run_id, $run_token)) {
-                fclose($handle);
+                wasmer_migrate_stream_close($handle);
                 return wasmer_migrate_stale_run_error();
             }
             $result = wasmer_migrate_request($destination, '/session/' . rawurlencode($destination['session']) . '/chunk', $body);
             if ($run_id !== '' && $run_token !== '' && !wasmer_migrate_is_active_run($run_id, $run_token)) {
-                fclose($handle);
+                wasmer_migrate_stream_close($handle);
                 return wasmer_migrate_stale_run_error();
             }
             $attempt++;
@@ -126,14 +126,14 @@ function wasmer_migrate_send_file($destination, $kind, $path, $absolute, $chunk_
                 break;
             }
             if ($run_id !== '' && $run_token !== '' && !wasmer_migrate_is_active_run($run_id, $run_token)) {
-                fclose($handle);
+                wasmer_migrate_stream_close($handle);
                 return wasmer_migrate_stale_run_error();
             }
             sleep(min($attempt, 5));
         } while ($attempt < 3);
 
         if (is_wp_error($result)) {
-            fclose($handle);
+            wasmer_migrate_stream_close($handle);
             return $result;
         }
 
@@ -143,12 +143,12 @@ function wasmer_migrate_send_file($destination, $kind, $path, $absolute, $chunk_
             ? wasmer_migrate_save_state_for_run($state, $run_id, $run_token)
             : wasmer_migrate_save_state($state);
         if (is_wp_error($saved)) {
-            fclose($handle);
+            wasmer_migrate_stream_close($handle);
             return $saved;
         }
     }
 
-    fclose($handle);
+    wasmer_migrate_stream_close($handle);
     return true;
 }
 
@@ -252,7 +252,16 @@ function wasmer_migrate_transfer($run_id = '', $run_token = '')
     if (is_wp_error($saved)) {
         return $saved;
     }
-    wasmer_migrate_delete_run_dir($state['id']);
+    if (!wasmer_migrate_delete_run_dir($state['id'])) {
+        $state['cleanup_warning'] = 'The transfer completed, but temporary export files could not be removed automatically.';
+        if ($run_id !== '' && $run_token !== '') {
+            wasmer_migrate_save_state_for_run($state, $run_id, $run_token);
+            wasmer_migrate_log_for_run($state['id'], $run_token, $state['cleanup_warning']);
+        } else {
+            wasmer_migrate_save_state($state);
+            wasmer_migrate_log($state['id'], $state['cleanup_warning']);
+        }
+    }
     if ($run_id !== '' && $run_token !== '') {
         wasmer_migrate_log_for_run($state['id'], $run_token, 'Transfer complete.');
     } else {

@@ -5,19 +5,30 @@ if (!defined('ABSPATH')) {
 }
 
 function wasmer_icon() {
-    $svg_icon = '<svg viewBox="0 0 29 34" height="1em" width="1em"  fill="currentColor" style="vertical-align:middle;">
-                        <g clip-path="url(#prefix__clip0_1268_12249)">
+    $svg_icon = '<svg viewBox="0 0 29 34" height="1em" width="1em" fill="currentColor" style="vertical-align:middle;">
                             <path d="M0 12.3582C0 10.4725 0 9.52973 0.507307 9.23683C1.01461 8.94394 1.83111 9.41534 3.46411 10.3581L10.784 14.5843C12.417 15.5271 13.2335 15.9985 13.7408 16.8771C14.2481 17.7558 14.2481 18.6986 14.2481 20.5843V29.0364C14.2481 30.9221 14.2481 31.8649 13.7408 32.1578C13.2335 32.4507 12.417 31.9793 10.784 31.0365L3.4641 26.8103C1.83111 25.8675 1.01461 25.3961 0.507307 24.5175C0 23.6388 0 22.696 0 20.8103V12.3582Z"></path>
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M7.46147 5.14203C6.95416 5.43492 6.95416 6.37773 6.95416 8.26335V9.18177L13.9688 13.2317C15.6018 14.1745 16.4183 14.6459 16.9256 15.5246C17.433 16.4032 17.433 17.346 17.433 19.2317V26.7654L17.7382 26.9416C19.3711 27.8845 20.1876 28.3559 20.695 28.063C21.2023 27.7701 21.2023 26.8273 21.2023 24.9416V16.4894C21.2023 14.6038 21.2023 13.661 20.695 12.7823C20.1876 11.9037 19.3711 11.4323 17.7382 10.4895L10.4183 6.26334C8.78527 5.32054 7.96878 4.84914 7.46147 5.14203Z"></path>
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M14.5533 1.05023C14.046 1.34313 14.046 2.28594 14.046 4.17156V5.09003L21.0607 9.13993C22.6937 10.0827 23.5102 10.5541 24.0175 11.4328C24.5248 12.3115 24.5248 13.2543 24.5248 15.1399V22.6736L24.83 22.8499C26.463 23.7927 27.2795 24.2641 27.7868 23.9712C28.2941 23.6783 28.2941 22.7355 28.2941 20.8498V12.3976C28.2941 10.512 28.2941 9.56922 27.7868 8.69054C27.2795 7.81187 26.463 7.34046 24.83 6.39766L17.5101 2.17155C15.8771 1.22874 15.0606 0.757338 14.5533 1.05023Z"></path>
-                        </g>
-                        <defs>
-                            <clipPath id="prefix__clip0_1268_12249">
-                                <path fill="#fff" d="M0 0h29v36H0z"></path>
-                            </clipPath>
-                        </defs>
                     </svg>';
     return $svg_icon;
+}
+
+function wasmer_svg_kses_allowed_html() {
+    return array(
+        'svg' => array(
+            'viewbox' => true,
+            'height' => true,
+            'width' => true,
+            'fill' => true,
+            'style' => true,
+        ),
+        'path' => array(
+            'd' => true,
+            'fill' => true,
+            'fill-rule' => true,
+            'clip-rule' => true,
+        ),
+    );
 }
 
 function wasmer_app_dashboard_url($app_id) {
@@ -32,7 +43,7 @@ function wasmer_claim_app_url($app_id) {
     return wasmer_base_url().'/apps/claim/'.$app_id;
 }
 
-function get_perishable_time() {
+function wasmer_get_perishable_time() {
     if (!WASMER_PERISHABLE_TIMESTAMP) {
         return null;
     }
@@ -46,8 +57,8 @@ function get_perishable_time() {
     return null;
 }
 
-function get_perishable_time_left() {
-    $perishable_time = get_perishable_time();
+function wasmer_get_perishable_time_left() {
+    $perishable_time = wasmer_get_perishable_time();
     if (!$perishable_time) {
         return null;
     }
@@ -80,7 +91,7 @@ function wasmer_add_top_bar_menu($admin_bar) {
     // Calculate time left based on WASMER_PERISHABLE_TIMESTAMP
     $notification_preview = '';
     $notification_html = '';
-    $time_left = get_perishable_time_left();
+    $time_left = wasmer_get_perishable_time_left();
     if ($time_left) {
         $notification_preview = ' <span class="awaiting-mod" style="display: inline-block; vertical-align: middle; margin: -2px 0 0 2px; padding: 0 5px; min-width: 7px; height: 17px; border-radius: 11px; background-color: #d63638; color: #fff; font-size: 9px; line-height: 17px; text-align: center; z-index: 26;">!</span>';
         $notification_html = ' <span class="awaiting-mod" style="display: inline-block; vertical-align: middle; margin: -2px 0 0 2px; padding: 0 5px; min-width: 7px; height: 17px; border-radius: 11px; background-color: #d63638; color: #fff; font-size: 9px; line-height: 17px; text-align: center; z-index: 26;">App expiring in ' . $time_left . '</span>';
@@ -311,13 +322,13 @@ function wasmer_dashboard_widget_display() {
     $wasmer_settings_url = wasmer_app_dashboard_wp_settings_url(WASMER_APP_ID);
     $claim_app_url = wasmer_claim_app_url(WASMER_APP_ID);
     $requires_64_bit = wasmer_get_active_64_bit_required_plugins();
-    $time_left = get_perishable_time_left();
+    $time_left = wasmer_get_perishable_time_left();
     ?>
     <?php if ($time_left) : ?>
         <div class="notice notice-error inline">
             <p>
-                <strong>App expiring in <?= $time_left ?>.</strong>
-                <a href="<?= esc_url($claim_app_url) ?>" rel="noopener noreferrer">Claim App to prevent expiration</a>.
+                <strong>App expiring in <?php echo esc_html($time_left); ?>.</strong>
+                <a href="<?php echo esc_url($claim_app_url); ?>" rel="noopener noreferrer">Claim App to prevent expiration</a>.
             </p>
         </div>
     <?php endif; ?>
@@ -326,29 +337,21 @@ function wasmer_dashboard_widget_display() {
             <p>
                 <strong>64-bit PHP required.</strong>
                 The following active plugins require 64-bit PHP:
-                <?= esc_html(implode(', ', $requires_64_bit)) ?>.
+                <?php echo esc_html(implode(', ', $requires_64_bit)); ?>.
                 Please update your PHP version in the
-                <a href="<?= esc_url($wasmer_settings_url) ?>" rel="noopener noreferrer">Wasmer WordPress Settings</a>.
+                <a href="<?php echo esc_url($wasmer_settings_url); ?>" rel="noopener noreferrer">Wasmer WordPress Settings</a>.
             </p>
         </div>
     <?php endif; ?>
     <p>Manage this WordPress app from your Wasmer Control Panel.</p>
-    <p>Update the WordPress and PHP version used, and the WordPress definitions from the <a href="<?= esc_url($wp_dashboard_url) ?>" rel="noopener noreferrer">Wasmer WordPress Settings</a>.</p>
+    <p>Update the WordPress and PHP version used, and the WordPress definitions from the <a href="<?php echo esc_url($wp_dashboard_url); ?>" rel="noopener noreferrer">Wasmer WordPress Settings</a>.</p>
     <p>
-        <a class="button button-primary" href="<?= esc_url($dashboard_url) ?>" rel="noopener noreferrer">
-            <?= $svg_icon ?> Wasmer Control Panel
+        <a class="button button-primary" href="<?php echo esc_url($dashboard_url); ?>" rel="noopener noreferrer">
+            <?php echo wp_kses($svg_icon, wasmer_svg_kses_allowed_html()); ?> Wasmer Control Panel
         </a>
     </p>
     <?php
 }
-
-// Callback function for the external link submenu
-function wasmer_external_link_page() {
-    // Redirect to the Wasmer.io site
-    wp_redirect('https://wasmer.io/');
-    exit;
-}
-
 
 // Callback function for the dashboard page
 function wasmer_dashboard_page() {
@@ -358,7 +361,7 @@ function wasmer_dashboard_page() {
     $svg_icon = wasmer_icon();
     ?>
     <div class="wrap">
-        <h1><?= $svg_icon ?> Wasmer Dashboard</h1>
+        <h1><?php echo wp_kses($svg_icon, wasmer_svg_kses_allowed_html()); ?> Wasmer Dashboard</h1>
         <p>Welcome to the Wasmer plugin! Customize this dashboard as needed.</p>
     </div>
     <?php

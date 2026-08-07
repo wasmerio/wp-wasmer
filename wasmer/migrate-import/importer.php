@@ -130,7 +130,7 @@ function wasmer_import_update_imported_option($option, $value)
         ['%s']
     );
     if ($updated === false || $updated === 0) {
-        $exists = $wpdb->get_var($wpdb->prepare("SELECT option_id FROM {$wpdb->options} WHERE option_name = %s", $option));
+        $exists = wasmer_import_db_get_var(wasmer_import_db_prepare("SELECT option_id FROM {$wpdb->options} WHERE option_name = %s", $option));
         if (!$exists) {
             $wpdb->insert(
                 $wpdb->options,
@@ -151,7 +151,7 @@ function wasmer_import_database_active_plugins()
 {
     global $wpdb;
 
-    $serialized = $wpdb->get_var($wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", 'active_plugins'));
+    $serialized = wasmer_import_db_get_var(wasmer_import_db_prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", 'active_plugins'));
     $active_plugins = maybe_unserialize($serialized);
     return is_array($active_plugins) ? $active_plugins : [];
 }
@@ -272,15 +272,15 @@ function wasmer_import_drop_tables($tables)
         return true;
     }
 
-    $wpdb->query('SET FOREIGN_KEY_CHECKS=0');
+    wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=0');
     foreach ($tables as $table) {
-        $result = $wpdb->query('DROP TABLE IF EXISTS ' . wasmer_import_sql_identifier($table));
+        $result = wasmer_import_db_query('DROP TABLE IF EXISTS ' . wasmer_import_sql_identifier($table));
         if ($result === false) {
-            $wpdb->query('SET FOREIGN_KEY_CHECKS=1');
+            wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=1');
             return new WP_Error('wasmer_import_drop_failed', 'Could not prepare database table: ' . $table . '. ' . $wpdb->last_error, ['status' => 500]);
         }
     }
-    $wpdb->query('SET FOREIGN_KEY_CHECKS=1');
+    wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=1');
 
     return true;
 }
@@ -289,7 +289,7 @@ function wasmer_import_table_exists($table)
 {
     global $wpdb;
 
-    $found = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+    $found = wasmer_import_db_get_var(wasmer_import_db_prepare('SHOW TABLES LIKE %s', $table));
     return is_string($found) && strcasecmp($found, $table) === 0;
 }
 
@@ -306,7 +306,7 @@ function wasmer_import_update_option_in_table($table, $option, $value)
         ['%s']
     );
     if ($updated === false || $updated === 0) {
-        $exists = $wpdb->get_var($wpdb->prepare('SELECT option_id FROM ' . wasmer_import_sql_identifier($table) . ' WHERE option_name = %s', $option));
+        $exists = wasmer_import_db_get_var(wasmer_import_db_prepare('SELECT option_id FROM ' . wasmer_import_sql_identifier($table) . ' WHERE option_name = %s', $option));
         if (!$exists) {
             $wpdb->insert(
                 $table,
@@ -325,7 +325,7 @@ function wasmer_import_active_plugins_from_options_table($table)
 {
     global $wpdb;
 
-    $serialized = $wpdb->get_var($wpdb->prepare('SELECT option_value FROM ' . wasmer_import_sql_identifier($table) . ' WHERE option_name = %s', 'active_plugins'));
+    $serialized = wasmer_import_db_get_var(wasmer_import_db_prepare('SELECT option_value FROM ' . wasmer_import_sql_identifier($table) . ' WHERE option_name = %s', 'active_plugins'));
     $active_plugins = maybe_unserialize($serialized);
     return is_array($active_plugins) ? $active_plugins : [];
 }
@@ -354,7 +354,7 @@ function wasmer_import_rewrite_staged_prefixed_keys($manifest, $source_prefix, $
 
     $options_table = wasmer_import_remap_table_name($source_prefix . 'options', $source_prefix, $staging_prefix);
     if (wasmer_import_table_exists($options_table)) {
-        $result = $wpdb->query($wpdb->prepare(
+        $result = wasmer_import_db_query(wasmer_import_db_prepare(
             'UPDATE ' . wasmer_import_sql_identifier($options_table) . ' SET option_name = CONCAT(%s, SUBSTRING(option_name, %d)) WHERE option_name LIKE %s',
             $destination_prefix,
             strlen($staging_prefix) + 1,
@@ -367,7 +367,7 @@ function wasmer_import_rewrite_staged_prefixed_keys($manifest, $source_prefix, $
 
     $usermeta_table = wasmer_import_remap_table_name($source_prefix . 'usermeta', $source_prefix, $staging_prefix);
     if (wasmer_import_table_exists($usermeta_table)) {
-        $result = $wpdb->query($wpdb->prepare(
+        $result = wasmer_import_db_query(wasmer_import_db_prepare(
             'UPDATE ' . wasmer_import_sql_identifier($usermeta_table) . ' SET meta_key = CONCAT(%s, SUBSTRING(meta_key, %d)) WHERE meta_key LIKE %s',
             $destination_prefix,
             strlen($staging_prefix) + 1,
@@ -385,7 +385,7 @@ function wasmer_import_table_columns($table)
 {
     global $wpdb;
 
-    $columns = $wpdb->get_col('SHOW COLUMNS FROM ' . wasmer_import_sql_identifier($table), 0);
+    $columns = wasmer_import_db_get_col('SHOW COLUMNS FROM ' . wasmer_import_sql_identifier($table), 0);
     return is_array($columns) ? $columns : [];
 }
 
@@ -393,7 +393,7 @@ function wasmer_import_next_user_id($users_table)
 {
     global $wpdb;
 
-    return (int) $wpdb->get_var('SELECT COALESCE(MAX(ID), 0) + 1 FROM ' . wasmer_import_sql_identifier($users_table));
+    return (int) wasmer_import_db_get_var('SELECT COALESCE(MAX(ID), 0) + 1 FROM ' . wasmer_import_sql_identifier($users_table));
 }
 
 function wasmer_import_delete_staged_user($users_table, $usermeta_table, $user_id)
@@ -408,7 +408,7 @@ function wasmer_import_staged_user_id_for_destination_user($users_table, $user)
 {
     global $wpdb;
 
-    $user_id = $wpdb->get_var($wpdb->prepare(
+    $user_id = wasmer_import_db_get_var(wasmer_import_db_prepare(
         'SELECT ID FROM ' . wasmer_import_sql_identifier($users_table) . ' WHERE user_login = %s LIMIT 1',
         (string) $user['user_login']
     ));
@@ -417,7 +417,7 @@ function wasmer_import_staged_user_id_for_destination_user($users_table, $user)
     }
 
     if (!empty($user['user_email'])) {
-        $user_id = $wpdb->get_var($wpdb->prepare(
+        $user_id = wasmer_import_db_get_var(wasmer_import_db_prepare(
             'SELECT ID FROM ' . wasmer_import_sql_identifier($users_table) . ' WHERE user_email = %s LIMIT 1',
             (string) $user['user_email']
         ));
@@ -426,7 +426,7 @@ function wasmer_import_staged_user_id_for_destination_user($users_table, $user)
         }
     }
 
-    $id_available = !$wpdb->get_var($wpdb->prepare(
+    $id_available = !wasmer_import_db_get_var(wasmer_import_db_prepare(
         'SELECT ID FROM ' . wasmer_import_sql_identifier($users_table) . ' WHERE ID = %d LIMIT 1',
         (int) $user['ID']
     ));
@@ -452,18 +452,18 @@ function wasmer_import_preserve_destination_users($manifest, $source_prefix, $st
         return new WP_Error('wasmer_import_user_merge_failed', 'Could not inspect staged users table.', ['status' => 500]);
     }
 
-    $destination_users = $wpdb->get_results('SELECT * FROM ' . wasmer_import_sql_identifier($destination_users_table), ARRAY_A);
+    $destination_users = wasmer_import_db_get_results('SELECT * FROM ' . wasmer_import_sql_identifier($destination_users_table), ARRAY_A);
     if (!is_array($destination_users)) {
         return new WP_Error('wasmer_import_user_merge_failed', 'Could not read destination users.', ['status' => 500]);
     }
 
     foreach ($destination_users as $user) {
-        $source_user_id = $wpdb->get_var($wpdb->prepare(
+        $source_user_id = wasmer_import_db_get_var(wasmer_import_db_prepare(
             'SELECT ID FROM ' . wasmer_import_sql_identifier($staged_users_table) . ' WHERE user_login = %s LIMIT 1',
             (string) $user['user_login']
         ));
         if (!$source_user_id && !empty($user['user_email'])) {
-            $source_user_id = $wpdb->get_var($wpdb->prepare(
+            $source_user_id = wasmer_import_db_get_var(wasmer_import_db_prepare(
                 'SELECT ID FROM ' . wasmer_import_sql_identifier($staged_users_table) . ' WHERE user_email = %s LIMIT 1',
                 (string) $user['user_email']
             ));
@@ -476,7 +476,7 @@ function wasmer_import_preserve_destination_users($manifest, $source_prefix, $st
 
         $staged_user_id = wasmer_import_staged_user_id_for_destination_user($staged_users_table, $user);
 
-        $conflicting_ids = $wpdb->get_col($wpdb->prepare(
+        $conflicting_ids = wasmer_import_db_get_col(wasmer_import_db_prepare(
             'SELECT ID FROM ' . wasmer_import_sql_identifier($staged_users_table) . ' WHERE (user_login = %s OR user_email = %s) AND ID <> %d',
             (string) $user['user_login'],
             (string) $user['user_email'],
@@ -489,7 +489,7 @@ function wasmer_import_preserve_destination_users($manifest, $source_prefix, $st
         $row = array_intersect_key($user, array_flip($user_columns));
         $row['ID'] = $staged_user_id;
 
-        $exists = $wpdb->get_var($wpdb->prepare(
+        $exists = wasmer_import_db_get_var(wasmer_import_db_prepare(
             'SELECT ID FROM ' . wasmer_import_sql_identifier($staged_users_table) . ' WHERE ID = %d LIMIT 1',
             (int) $staged_user_id
         ));
@@ -506,7 +506,7 @@ function wasmer_import_preserve_destination_users($manifest, $source_prefix, $st
         }
 
         $wpdb->delete($staged_usermeta_table, ['user_id' => (int) $staged_user_id], ['%d']);
-        $metadata = $wpdb->get_results($wpdb->prepare(
+        $metadata = wasmer_import_db_get_results(wasmer_import_db_prepare(
             'SELECT meta_key, meta_value FROM ' . wasmer_import_sql_identifier($destination_usermeta_table) . ' WHERE user_id = %d',
             (int) $user['ID']
         ), ARRAY_A);
@@ -565,9 +565,9 @@ function wasmer_import_swap_staged_tables($manifest, $source_prefix, $destinatio
         $renames[] = wasmer_import_sql_identifier($staging_tables[$source_table]) . ' TO ' . wasmer_import_sql_identifier($destination_table);
     }
 
-    $wpdb->query('SET FOREIGN_KEY_CHECKS=0');
-    $result = $wpdb->query('RENAME TABLE ' . implode(', ', $renames));
-    $wpdb->query('SET FOREIGN_KEY_CHECKS=1');
+    wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=0');
+    $result = wasmer_import_db_query('RENAME TABLE ' . implode(', ', $renames));
+    wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=1');
     if ($result === false) {
         return new WP_Error('wasmer_import_swap_failed', 'Could not swap imported database tables into place: ' . $wpdb->last_error, ['status' => 500]);
     }
@@ -591,6 +591,49 @@ function wasmer_import_sql_string($value)
 function wasmer_import_sql_identifier($identifier)
 {
     return '`' . str_replace('`', '``', (string) $identifier) . '`';
+}
+
+/**
+ * Database primitives used by the importer.
+ *
+ * Importing a complete SQL export, inspecting staging tables, and atomically
+ * swapping them cannot use WordPress's entity APIs. Callers prepare values and
+ * pass table names through wasmer_import_sql_identifier() before reaching this
+ * boundary.
+ */
+function wasmer_import_db_query($query)
+{
+    global $wpdb;
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Complete database imports require validated SQL and atomic table operations.
+    return $wpdb->query($query);
+}
+
+function wasmer_import_db_prepare($query, ...$args)
+{
+    global $wpdb;
+    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Callers escape dynamic identifiers before this central preparation boundary.
+    return $wpdb->prepare($query, ...$args);
+}
+
+function wasmer_import_db_get_var($query, $column = 0, $row = 0)
+{
+    global $wpdb;
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared and identifiers are escaped by callers.
+    return $wpdb->get_var($query, $column, $row);
+}
+
+function wasmer_import_db_get_col($query, $column = 0)
+{
+    global $wpdb;
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared and identifiers are escaped by callers.
+    return $wpdb->get_col($query, $column);
+}
+
+function wasmer_import_db_get_results($query, $output = OBJECT)
+{
+    global $wpdb;
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query values are prepared and identifiers are escaped by callers.
+    return $wpdb->get_results($query, $output);
 }
 
 function wasmer_import_parse_sql_values($values_sql)
@@ -901,9 +944,9 @@ function wasmer_import_start($session_id)
         $sql = file_get_contents($db_file);
         foreach (wasmer_import_split_sql($sql) as $statement) {
             $statement = wasmer_import_transform_sql_statement($statement, $source_prefix, $staging_prefix, $url_replacements);
-            $result = $wpdb->query($statement);
+            $result = wasmer_import_db_query($statement);
             if ($result === false) {
-                $wpdb->query('SET FOREIGN_KEY_CHECKS=1');
+                wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=1');
                 wasmer_import_drop_tables(array_values($staged_tables));
                 $session['status'] = 'failed';
                 $session['error'] = $wpdb->last_error;
@@ -912,7 +955,7 @@ function wasmer_import_start($session_id)
                 return new WP_Error('wasmer_import_sql_failed', 'Database import failed: ' . $wpdb->last_error, ['status' => 500]);
             }
         }
-        $wpdb->query('SET FOREIGN_KEY_CHECKS=1');
+        wasmer_import_db_query('SET FOREIGN_KEY_CHECKS=1');
         $staged_options = wasmer_import_remap_table_name($source_prefix . 'options', $source_prefix, $staging_prefix);
         $staged_options_ready = wasmer_import_prepare_staged_options($staged_options, $destination_active_plugins, $destination_siteurl, $destination_home);
         if (is_wp_error($staged_options_ready)) {
@@ -989,8 +1032,11 @@ function wasmer_import_start($session_id)
     $session['completed'] = time();
     wasmer_import_save_session($session);
     wasmer_import_log($session_id, 'Import completed.');
-    $public = wasmer_import_public_session($session);
-    wasmer_import_delete_session_artifacts($session_id);
+    if (!wasmer_import_delete_session_artifacts($session_id)) {
+        $session['cleanup_warning'] = 'The import completed, but temporary staging files could not be removed automatically.';
+        wasmer_import_save_session($session);
+        wasmer_import_log($session_id, $session['cleanup_warning']);
+    }
 
-    return $public;
+    return wasmer_import_public_session($session);
 }

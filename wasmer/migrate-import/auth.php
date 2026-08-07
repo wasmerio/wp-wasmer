@@ -49,7 +49,7 @@ function wasmer_import_parse_authorization($request)
 {
     $header = $request->get_header('authorization');
     if (!$header && isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        $header = $_SERVER['HTTP_AUTHORIZATION'];
+        $header = sanitize_text_field(wp_unslash($_SERVER['HTTP_AUTHORIZATION']));
     }
 
     if (!$header) {
@@ -95,6 +95,7 @@ function wasmer_import_authenticate_request($request)
     if ((int) ($session['expires'] ?? 0) < time()) {
         $session['status'] = 'expired';
         wasmer_import_save_session($session);
+        wasmer_import_delete_session_artifacts($auth['session'], true);
         return new WP_Error('wasmer_import_expired', 'Import code expired.', ['status' => 403]);
     }
 

@@ -4,6 +4,36 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/**
+ * Local stream helpers for resumable, offset-based migration uploads.
+ *
+ * WP_Filesystem has no offset-based streaming API and would require loading an
+ * entire database or media file into memory.
+ */
+function wasmer_import_stream_open($path, $mode)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Resumable migration uploads require offset-based local streams.
+    return fopen($path, $mode);
+}
+
+function wasmer_import_stream_write($handle, $bytes)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Resumable migration uploads require offset-based local streams.
+    return fwrite($handle, $bytes);
+}
+
+function wasmer_import_stream_close($handle)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Paired with the justified local streaming helpers above.
+    return fclose($handle);
+}
+
+function wasmer_import_stream_finalize($source, $destination)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Atomic rename prevents partially uploaded files from becoming importable.
+    return rename($source, $destination);
+}
+
 function wasmer_import_normalize_relative_path($path)
 {
     $path = str_replace('\\', '/', (string) $path);
@@ -132,19 +162,19 @@ function wasmer_import_write_chunk($session, $relative_path, $offset, $bytes, $c
         ]);
     }
 
-    $handle = fopen($target, 'c+b');
+    $handle = wasmer_import_stream_open($target, 'c+b');
     if (!$handle) {
         return new WP_Error('wasmer_import_unwritable', 'Could not open destination file.', ['status' => 500]);
     }
 
     if (fseek($handle, $offset) !== 0) {
-        fclose($handle);
+        wasmer_import_stream_close($handle);
         return new WP_Error('wasmer_import_seek_failed', 'Could not seek destination file.', ['status' => 500]);
     }
 
-    $written = fwrite($handle, $bytes);
+    $written = wasmer_import_stream_write($handle, $bytes);
     fflush($handle);
-    fclose($handle);
+    wasmer_import_stream_close($handle);
 
     if ($written !== $length) {
         return new WP_Error('wasmer_import_write_failed', 'Could not write complete chunk.', ['status' => 500]);
@@ -156,7 +186,7 @@ function wasmer_import_write_chunk($session, $relative_path, $offset, $bytes, $c
         if ($final_hash && !hash_equals(strtolower($final_hash), hash_file('sha256', $target))) {
             return new WP_Error('wasmer_import_file_hash_mismatch', 'Final file hash mismatch.', ['status' => 400]);
         }
-        rename($target, $final);
+        wasmer_import_stream_finalize($target, $final);
         $complete = true;
     }
 

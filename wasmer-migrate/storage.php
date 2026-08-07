@@ -14,6 +14,36 @@ function wasmer_migrate_run_dir($migration_id)
     return wasmer_migrate_root_dir() . '/' . sanitize_key($migration_id);
 }
 
+/**
+ * Open a local migration file as a stream.
+ *
+ * WP_Filesystem does not provide chunked reads or writes and would load a full
+ * database or media file into memory, so migration payloads use local streams.
+ */
+function wasmer_migrate_stream_open($path, $mode)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Chunked migration streams must not load complete files into memory.
+    return fopen($path, $mode);
+}
+
+function wasmer_migrate_stream_read($handle, $length)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Chunked migration streams must not load complete files into memory.
+    return fread($handle, $length);
+}
+
+function wasmer_migrate_stream_write($handle, $data)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Chunked migration streams must not load complete files into memory.
+    return fwrite($handle, $data);
+}
+
+function wasmer_migrate_stream_close($handle)
+{
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Paired with the justified local streaming helpers above.
+    return fclose($handle);
+}
+
 function wasmer_migrate_delete_path($path)
 {
     if (!file_exists($path) && !is_link($path)) {

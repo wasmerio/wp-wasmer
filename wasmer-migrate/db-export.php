@@ -23,7 +23,7 @@ function wasmer_migrate_export_database($migration_id)
 
     wasmer_migrate_ensure_run_dir($migration_id);
     $file = wasmer_migrate_run_dir($migration_id) . '/database.sql';
-    $handle = fopen($file, 'wb');
+    $handle = wasmer_migrate_stream_open($file, 'wb');
     if (!$handle) {
         return new WP_Error('wasmer_migrate_db_export_failed', 'Could not create database export file.');
     }
@@ -31,9 +31,10 @@ function wasmer_migrate_export_database($migration_id)
     $tables = $wpdb->get_col($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($wpdb->prefix) . '%'));
     foreach ($tables as $table) {
         $table_identifier = wasmer_migrate_sql_identifier($table);
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- The identifier is backtick-escaped by wasmer_migrate_sql_identifier().
         $create = $wpdb->get_row('SHOW CREATE TABLE ' . $table_identifier, ARRAY_N);
         if ($create && isset($create[1])) {
-            fwrite($handle, 'DROP TABLE IF EXISTS ' . $table_identifier . ";\n" . $create[1] . ";\n\n");
+            wasmer_migrate_stream_write($handle, 'DROP TABLE IF EXISTS ' . $table_identifier . ";\n" . $create[1] . ";\n\n");
         }
 
         $offset = 0;
@@ -43,15 +44,15 @@ function wasmer_migrate_export_database($migration_id)
             foreach ($rows as $row) {
                 $columns = array_map('wasmer_migrate_sql_identifier', array_keys($row));
                 $values = array_map('wasmer_migrate_sql_string', array_values($row));
-                fwrite($handle, 'INSERT INTO ' . $table_identifier . ' (' . implode(',', $columns) . ') VALUES (' . implode(',', $values) . ");\n");
+                wasmer_migrate_stream_write($handle, 'INSERT INTO ' . $table_identifier . ' (' . implode(',', $columns) . ') VALUES (' . implode(',', $values) . ");\n");
             }
             $offset += $limit;
         } while (count($rows) === $limit);
 
-        fwrite($handle, "\n");
+        wasmer_migrate_stream_write($handle, "\n");
     }
 
-    fclose($handle);
+    wasmer_migrate_stream_close($handle);
 
     return [
         'path' => $file,

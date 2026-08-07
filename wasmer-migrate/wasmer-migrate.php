@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Wasmer Migrate
- * Plugin URI: https://github.com/wasmerio/wp-wasmer
- * Description: Migrate a WordPress site into a Wasmer WordPress app.
+ * Plugin URI: https://github.com/wasmerio/wp-wasmer/blob/main/docs/site-migrations.md
+ * Description: Migrate a complete WordPress site to Wasmer, including its database, uploads, plugins, and themes.
  * Author: Wasmer
  * Author URI: https://wasmer.io
  * Version: 0.1.0
@@ -33,6 +33,18 @@ require_once __DIR__ . '/exporter.php';
 require_once __DIR__ . '/transfer-client.php';
 require_once __DIR__ . '/auto-app.php';
 require_once __DIR__ . '/admin-page.php';
+
+function wasmer_migrate_add_privacy_policy_content()
+{
+    if (!function_exists('wp_add_privacy_policy_content')) {
+        return;
+    }
+    $content = '<p class="privacy-policy-tutorial">' .
+        esc_html__('When an administrator starts a migration, Wasmer Migrate sends the complete WordPress database, including user records and password hashes, plus uploads, plugins, and themes to the Wasmer service. Site name, locale, administrator email, generated destination credentials, WordPress version, and an optional Wasmer access token are also sent to create and configure the destination app. Review the Wasmer Terms of Service and Privacy Policy before using this feature.', 'wasmer-migrate') .
+        '</p>';
+    wp_add_privacy_policy_content('Wasmer Migrate', wp_kses_post(wpautop($content, false)));
+}
+add_action('admin_init', 'wasmer_migrate_add_privacy_policy_content');
 
 function wasmer_migrate_uninstall()
 {

@@ -275,7 +275,10 @@ function wasmer_import_rest_cancel($request)
     $session['cancelled'] = time();
     wasmer_import_save_session($session);
     wasmer_import_log($session['id'], 'Import session cancelled.');
-    $public = wasmer_import_public_session($session);
-    wasmer_import_delete_session_artifacts($session['id']);
-    return $public;
+    if (!wasmer_import_delete_session_artifacts($session['id'])) {
+        $session['cleanup_warning'] = 'The import was cancelled, but temporary staging files could not be removed automatically.';
+        wasmer_import_save_session($session);
+        wasmer_import_log($session['id'], $session['cleanup_warning']);
+    }
+    return wasmer_import_public_session($session);
 }
