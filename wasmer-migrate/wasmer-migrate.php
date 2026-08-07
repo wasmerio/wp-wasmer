@@ -76,7 +76,7 @@ if (defined('WP_CLI') && WP_CLI) {
         public function status($args, $assoc_args)
         {
             $state = wasmer_migrate_get_state();
-            unset($state['code'], $state['destination']['token'], $state['auto_app']['token']);
+            unset($state['code'], $state['destination']['token'], $state['auto_app']['token'], $state['auto_app']['app_token']);
             WP_CLI::line(wp_json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         }
 

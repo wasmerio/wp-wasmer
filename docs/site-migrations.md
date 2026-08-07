@@ -103,6 +103,16 @@ Authorization: WasmerImport <session>:<token>
 
 The destination rejects unknown sessions, cancelled sessions, expired sessions, and requests with invalid token hashes.
 
+## Automatic Perishable App Flow
+
+The source plugin can create a perishable Wasmer WordPress app through `deployViaAutobuild`. The creation response includes a short-lived, app-scoped command token. The plugin keeps that token in the private migration state so an interrupted run can resume, and uses it only to authorize the `runEdgeCommand` calls that:
+
+- check that WordPress and WP-CLI are ready;
+- create the destination import session;
+- start the import after the transfer finishes.
+
+The command token is removed when the migration completes and is excluded from admin and WP-CLI status output.
+
 ## Source Plugin
 
 The source implementation lives in `wasmer-migrate/`.
@@ -238,7 +248,7 @@ wp wasmer-migrate start
 wp wasmer-migrate status
 wp wasmer-migrate resume
 wp wasmer-migrate cancel
-wp wasmer-migrate auto --graphql-url=<url> --token=<token> --owner=<owner> --region=<region>
+wp wasmer-migrate auto --graphql-url=<url> [--token=<creation-token>] [--owner=<owner>] [--region=<region>]
 ```
 
 The automatic flow accepts a Wasmer app name and an optional Wasmer access token in both the admin screen and WP-CLI (`--app-name`). App names are normalized to URL-safe slugs and, when necessary, receive a numeric suffix to avoid a name collision. When supplied, the token authenticates app creation and every GraphQL operation used to wait for the deployment and run remote WordPress commands. The resulting app belongs to the existing Wasmer account and is non-perishable by default. Without a token, the existing temporary-app flow remains available and defaults to a two-hour lifetime.

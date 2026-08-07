@@ -281,6 +281,7 @@ mutation CreateWordpressApp($input: DeployViaAutobuildInput!) {
   deployViaAutobuild(input: $input) {
     success
     buildId
+    appToken
   }
 }
 GRAPHQL, ['input' => $input]);
@@ -291,7 +292,13 @@ GRAPHQL, ['input' => $input]);
     if (empty($payload['success']) || empty($payload['buildId'])) {
         return new WP_Error('wasmer_migrate_app_create_failed', 'Wasmer did not return a build id for the new app.');
     }
-    return $payload['buildId'];
+    if (!empty($options['perish_at']) && empty($payload['appToken'])) {
+        return new WP_Error('wasmer_migrate_app_token_missing', 'Wasmer did not return a command token for the new perishable app.');
+    }
+    return [
+        'build_id' => (string) $payload['buildId'],
+        'app_token' => (string) ($payload['appToken'] ?? ''),
+    ];
 }
 
 function wasmer_migrate_auto_get_ready_app($options)
@@ -853,6 +860,7 @@ function wasmer_migrate_auto_app_import($options = [])
         : wasmer_migrate_auto_select_wordpress_version($options, $source_wp);
 
     $build_id = $can_resume ? (string) ($auto['build_id'] ?? '') : '';
+    $app_token = $can_resume ? trim((string) ($auto['app_token'] ?? '')) : '';
     if ($build_id === '') {
         $saved = wasmer_migrate_auto_state([
             'status' => 'auto_creating',
@@ -872,7 +880,7 @@ function wasmer_migrate_auto_app_import($options = [])
         }
 
         $base_app_name = $options['app_name'];
-        $build_id = null;
+        $created_app = null;
         for ($attempt = 0; $attempt < 5; $attempt++) {
             if (!wasmer_migrate_is_active_run($run_id, $run_token)) {
                 return wasmer_migrate_stale_run_error();
@@ -890,28 +898,31 @@ function wasmer_migrate_auto_app_import($options = [])
                 }
             }
 
-            $build_id = wasmer_migrate_auto_create_wordpress_app($options, $wp_version);
+            $created_app = wasmer_migrate_auto_create_wordpress_app($options, $wp_version);
             if (!wasmer_migrate_is_active_run($run_id, $run_token)) {
                 return wasmer_migrate_stale_run_error();
             }
-            if (!is_wp_error($build_id)) {
+            if (!is_wp_error($created_app)) {
                 break;
             }
-            if (!wasmer_migrate_auto_is_app_name_conflict($build_id)) {
-                return $build_id;
+            if (!wasmer_migrate_auto_is_app_name_conflict($created_app)) {
+                return $created_app;
             }
         }
-        if (is_wp_error($build_id)) {
+        if (is_wp_error($created_app)) {
             return new WP_Error(
                 'wasmer_migrate_app_name_conflict',
                 'Could not find an available Wasmer app name after 5 attempts.',
-                ['last_error' => $build_id->get_error_message()]
+                ['last_error' => $created_app->get_error_message()]
             );
         }
+        $build_id = (string) $created_app['build_id'];
+        $app_token = trim((string) $created_app['app_token']);
         $saved = wasmer_migrate_auto_state([
             'status' => 'auto_waiting',
             'app_name' => $options['app_name'],
             'build_id' => $build_id,
+            'app_token' => $app_token,
             'log' => 'Waiting for Wasmer app build.',
             'context' => ['build_id' => $build_id],
         ], $run_id, $run_token);
@@ -929,6 +940,16 @@ function wasmer_migrate_auto_app_import($options = [])
             return $saved;
         }
     }
+
+    $command_token = $options['authenticated'] ? trim((string) $options['token']) : $app_token;
+    if ($command_token === '') {
+        return new WP_Error(
+            'wasmer_migrate_app_token_missing',
+            'The command token for the new perishable app is missing. Start the migration again to create a new app.'
+        );
+    }
+    $command_options = $options;
+    $command_options['token'] = $command_token;
 
     $state = wasmer_migrate_get_state();
     if (!wasmer_migrate_is_active_run($run_id, $run_token)) {
@@ -972,7 +993,7 @@ function wasmer_migrate_auto_app_import($options = [])
     if (is_wp_error($saved)) {
         return $saved;
     }
-    $ready = wasmer_migrate_auto_wait_for_wp_cli($options, $app['id'], $run_id, $run_token);
+    $ready = wasmer_migrate_auto_wait_for_wp_cli($command_options, $app['id'], $run_id, $run_token);
     if (is_wp_error($ready)) {
         return $ready;
     }
@@ -1000,7 +1021,7 @@ function wasmer_migrate_auto_app_import($options = [])
             return $saved;
         }
 
-        $code = wasmer_migrate_auto_create_import_code($options, $app['id'], $app['url'] ?? '');
+        $code = wasmer_migrate_auto_create_import_code($command_options, $app['id'], $app['url'] ?? '');
         if (!wasmer_migrate_is_active_run($run_id, $run_token)) {
             return wasmer_migrate_stale_run_error();
         }
@@ -1057,7 +1078,7 @@ function wasmer_migrate_auto_app_import($options = [])
     if (is_wp_error($saved)) {
         return $saved;
     }
-    $import = wasmer_migrate_auto_start_import($options, $app['id'], $app['url'] ?? '', $session_id);
+    $import = wasmer_migrate_auto_start_import($command_options, $app['id'], $app['url'] ?? '', $session_id);
     if (!wasmer_migrate_is_active_run($run_id, $run_token)) {
         return wasmer_migrate_stale_run_error();
     }
@@ -1076,7 +1097,7 @@ function wasmer_migrate_auto_app_import($options = [])
     $state['auto_app']['import_stdout'] = trim((string) ($import['stdout'] ?? ''));
     $state['auto_app']['import_stderr'] = trim((string) ($import['stderr'] ?? ''));
     $state['auto_app']['completed'] = time();
-    unset($state['auto_app']['token']);
+    unset($state['auto_app']['token'], $state['auto_app']['app_token']);
     $state['resume_allowed'] = false;
     $saved = wasmer_migrate_save_state_for_run($state, $run_id, $run_token);
     if (is_wp_error($saved)) {

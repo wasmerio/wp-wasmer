@@ -41,7 +41,7 @@ function wasmer_migrate_public_state($state = null)
     $public['migration_id'] = (string) ($state['id'] ?? '');
     unset($public['run_token']);
     unset($public['destination']['token']);
-    unset($public['auto_app']['token']);
+    unset($public['auto_app']['token'], $public['auto_app']['app_token']);
     $public['file_count'] = count($state['files'] ?? []);
     unset($public['files'], $public['manifest'], $public['database']);
     $public['logs'] = !empty($state['id']) ? wasmer_migrate_read_logs($state['id']) : [];
