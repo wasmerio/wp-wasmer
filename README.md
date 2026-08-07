@@ -22,7 +22,7 @@ Start a local WordPress instance for manual testing:
 
 ```bash
 cd wasmer/tests
-pnpm run server:wp-68-protected
+pnpm run server:wp-70-protected
 ```
 
 Example manual checks:
