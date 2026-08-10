@@ -598,6 +598,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
       assert.equal(req.status, 0, req.stderr || req.stdout);
       assert.match(req.stdout, /ok/);
     });
+
+    it("prints automatic migration app data as standalone JSON", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer-migrate/tests/wp-cli-auto.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
+    });
   });
 
   after(
