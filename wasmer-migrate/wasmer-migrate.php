@@ -5,7 +5,9 @@
  * Description: Migrate a complete WordPress site to Wasmer, including its database, uploads, plugins, and themes.
  * Author: Wasmer
  * Author URI: https://wasmer.io
+ * x-release-please-start-version
  * Version: 0.1.0
+ * x-release-please-end
  * Text Domain: wasmer-migrate
  * Requires at least: 6.0
  * Tested up to: 7.0
@@ -18,7 +20,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// x-release-please-start-version
 define('WASMER_MIGRATE_VERSION', '0.1.0');
+// x-release-please-end
 define('WASMER_MIGRATE_PLUGIN_FILE', __FILE__);
 define('WASMER_MIGRATE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WASMER_MIGRATE_PLUGIN_URL', plugin_dir_url(__FILE__));

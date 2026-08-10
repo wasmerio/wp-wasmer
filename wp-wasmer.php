@@ -6,7 +6,9 @@
  * Description: Integrates WordPress sites hosted on Wasmer with CDN cache controls, managed updates, dashboard access, and site migrations.
  * Author: Wasmer
  * Author URI: https://wasmer.io
+ * x-release-please-start-version
  * Version: 0.4.5
+ * x-release-please-end
  * Text Domain: wasmer
  * Requires at least: 6.0
  * Tested up to: 7.0
@@ -17,10 +19,14 @@
  * @package  wp-wasmer
  * @category Core
  * @author   Wasmer
+ * x-release-please-start-version
  * @version  0.4.5
+ * x-release-please-end
  */
 
+// x-release-please-start-version
 define( 'WP_WASMER_PLUGIN_VERSION', '0.4.5' );
+// x-release-please-end
 
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
