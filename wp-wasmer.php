@@ -7,7 +7,7 @@
  * Author: Wasmer
  * Author URI: https://wasmer.io
  * x-release-please-start-version
- * Version: 0.4.5
+ * Version: 0.5.0
  * x-release-please-end
  * Text Domain: wasmer
  * Requires at least: 6.0
@@ -20,12 +20,12 @@
  * @category Core
  * @author   Wasmer
  * x-release-please-start-version
- * @version  0.4.5
+ * @version  0.5.0
  * x-release-please-end
  */
 
 // x-release-please-start-version
-define( 'WP_WASMER_PLUGIN_VERSION', '0.4.5' );
+define( 'WP_WASMER_PLUGIN_VERSION', '0.5.0' );
 // x-release-please-end
 
 if (!defined('ABSPATH')) {
