@@ -97,4 +97,12 @@ If a source transfer is interrupted, resume it with:
 wp wasmer-migrate resume
 ```
 
+To create a target app and run the complete migration in one blocking command:
+
+```bash
+wp wasmer-migrate auto --graphql-url=<registry-graphql-url> [--token=<existing-token>] [--owner=<owner>] [--region=<region>] [--perish-at=<duration>] [--app-name=<name>]
+```
+
+The optional token is used for an existing Wasmer account. Without it, the command creates a temporary app. The command waits for the app build, transfer, and target import to finish. On success, standard output is one standalone JSON document containing the target app information (`id`, `name`, `url`, `adminUrl`, `willPerishAt`, and `activeVersion.id`); failures are reported as WP-CLI errors.
+
 Before the target import starts, `wp wasmer import start` checks the source manifest for the active source theme and active source plugins. If a future transfer omits those files and matching themes or plugins are missing on the destination, the command fails before applying the database import.

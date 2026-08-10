@@ -248,10 +248,12 @@ wp wasmer-migrate start
 wp wasmer-migrate status
 wp wasmer-migrate resume
 wp wasmer-migrate cancel
-wp wasmer-migrate auto --graphql-url=<url> [--token=<creation-token>] [--owner=<owner>] [--region=<region>]
+wp wasmer-migrate auto --graphql-url=<url> [--token=<existing-token>] [--owner=<owner>] [--region=<region>] [--perish-at=<duration>] [--app-name=<name>]
 ```
 
-The automatic flow accepts a Wasmer app name and an optional Wasmer access token in both the admin screen and WP-CLI (`--app-name`). App names are normalized to URL-safe slugs and, when necessary, receive a numeric suffix to avoid a name collision. When supplied, the token authenticates app creation and every GraphQL operation used to wait for the deployment and run remote WordPress commands. The resulting app belongs to the existing Wasmer account and is non-perishable by default. Without a token, the existing temporary-app flow remains available and defaults to a two-hour lifetime.
+The automatic flow accepts a registry GraphQL endpoint, a Wasmer app name, and an optional existing Wasmer access token in both the admin screen and WP-CLI (`--graphql-url`, `--app-name`, and `--token`). App names are normalized to URL-safe slugs and, when necessary, receive a numeric suffix to avoid a name collision. When supplied, the token authenticates app creation and every GraphQL operation used to wait for the deployment and run remote WordPress commands. The resulting app belongs to the existing Wasmer account and is non-perishable by default. Without a token, the existing temporary-app flow remains available and defaults to a two-hour lifetime.
+
+`wp wasmer-migrate auto` is blocking: it returns only after the app build, site transfer, and remote WordPress import have completed, or after an error. On success, standard output is exactly one JSON document describing the target app, including its `id`, `name`, `url`, `adminUrl`, `willPerishAt`, and `activeVersion.id`. This makes the result directly consumable by tools such as `jq`.
 
 The admin screens and CLI commands share the same migration state and transfer implementation.
 
