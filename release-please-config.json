@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "include-v-in-tag": true,
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "wp-wasmer.php"
+        },
+        {
+          "type": "generic",
+          "path": "readme.txt"
+        },
+        {
+          "type": "generic",
+          "path": "wasmer-migrate/wasmer-migrate.php"
+        },
+        {
+          "type": "generic",
+          "path": "wasmer-migrate/readme.txt"
+        }
+      ]
+    }
+  }
+}
