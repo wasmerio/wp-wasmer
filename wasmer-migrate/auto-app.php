@@ -18,37 +18,23 @@ function wasmer_migrate_auto_default_token()
     return '';
 }
 
-function wasmer_migrate_auto_app_name_from_domain($suffix = '')
+function wasmer_migrate_auto_random_app_name()
 {
-    $host = wp_parse_url(home_url(), PHP_URL_HOST);
-    $host = is_string($host) && $host !== '' ? $host : wp_parse_url(site_url(), PHP_URL_HOST);
-    $host = is_string($host) && $host !== '' ? $host : get_bloginfo('name');
-    $host = preg_replace('/^www\./i', '', (string) $host);
-    $host = remove_accents($host);
-    $host = strtolower($host);
-    $host = preg_replace('/[^a-z0-9]+/', '-', $host);
-    $host = trim((string) $host, '-');
-    if ($host === '') {
-        $host = 'wordpress-site';
+    $alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    $suffix = '';
+    $max_index = strlen($alphabet) - 1;
+    for ($index = 0; $index < 8; $index++) {
+        $suffix .= $alphabet[wp_rand(0, $max_index)];
     }
 
-    $suffix = preg_replace('/[^a-z0-9]+/', '', strtolower((string) $suffix));
-    $suffix = $suffix !== '' ? '-' . substr($suffix, -6) : '';
-    $max_length = 36;
-    $base_length = max(1, $max_length - strlen($suffix));
-    $host = trim(substr($host, 0, $base_length), '-');
-    if ($host === '') {
-        $host = 'wordpress';
-    }
-
-    return substr($host . $suffix, 0, $max_length);
+    return 'wordpress-' . $suffix;
 }
 
 function wasmer_migrate_auto_app_name_candidate($base_name, $attempt)
 {
     $base_name = sanitize_title($base_name);
     if ($base_name === '') {
-        $base_name = wasmer_migrate_auto_app_name_from_domain();
+        $base_name = wasmer_migrate_auto_random_app_name();
     }
 
     $max_length = 36;
@@ -102,9 +88,12 @@ function wasmer_migrate_auto_options($options = [])
     $value = function ($key, $default) use ($options) {
         return isset($options[$key]) && (string) $options[$key] !== '' ? $options[$key] : $default;
     };
-    $app_name = wasmer_migrate_auto_app_name_candidate($value('app_name', wasmer_migrate_auto_app_name_from_domain()), 0);
+    $app_name = isset($options['app_name']) && (string) $options['app_name'] !== ''
+        ? $options['app_name']
+        : wasmer_migrate_auto_random_app_name();
+    $app_name = wasmer_migrate_auto_app_name_candidate($app_name, 0);
     if ($app_name === '') {
-        $app_name = wasmer_migrate_auto_app_name_from_domain();
+        $app_name = wasmer_migrate_auto_random_app_name();
     }
 
     $token = sanitize_text_field(trim((string) $value('token', wasmer_migrate_auto_default_token())));
