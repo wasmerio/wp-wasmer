@@ -69,6 +69,34 @@ function wasmer_migrate_auto_is_app_name_conflict($error)
     return strpos($message, 'already exists') !== false;
 }
 
+function wasmer_migrate_auto_admin_username()
+{
+    $user = wp_get_current_user();
+    if ($user instanceof WP_User && $user->exists() && user_can($user, 'manage_options')) {
+        return (string) $user->user_login;
+    }
+
+    $admin_email = sanitize_email((string) get_option('admin_email'));
+    if ($admin_email !== '') {
+        $user = get_user_by('email', $admin_email);
+        if ($user instanceof WP_User && user_can($user, 'manage_options')) {
+            return (string) $user->user_login;
+        }
+    }
+
+    $administrators = get_users([
+        'role' => 'administrator',
+        'orderby' => 'ID',
+        'order' => 'ASC',
+        'number' => 1,
+    ]);
+    if (!empty($administrators[0]) && $administrators[0] instanceof WP_User) {
+        return (string) $administrators[0]->user_login;
+    }
+
+    return 'admin';
+}
+
 function wasmer_migrate_auto_options($options = [])
 {
     $value = function ($key, $default) use ($options) {
@@ -91,7 +119,7 @@ function wasmer_migrate_auto_options($options = [])
         'app_name' => $app_name,
         'site_name' => wp_strip_all_tags(get_bloginfo('name') ?: 'Migrated WordPress site'),
         'admin_email' => sanitize_email(get_option('admin_email') ?: 'admin@example.com'),
-        'admin_username' => 'admin',
+        'admin_username' => wasmer_migrate_auto_admin_username(),
         'admin_password' => wp_generate_password(24, true, true),
     ];
 }
