@@ -212,7 +212,7 @@
 }
 
 .wasmer-migrate-advanced.is-open {
-    max-height: 120px;
+    max-height: 240px;
     opacity: 1;
     transform: translateY(0);
 }

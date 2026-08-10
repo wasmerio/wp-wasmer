@@ -286,20 +286,20 @@ function wasmer_migrate_admin_page()
                     <input type="text" id="wasmer-migrate-auto-app-name" value="<?php echo esc_attr(wasmer_migrate_auto_app_name_from_domain()); ?>" maxlength="36" autocomplete="off" spellcheck="false" aria-describedby="wasmer-migrate-auto-app-name-help">
                     <small id="wasmer-migrate-auto-app-name-help">Used in the app URL. Spaces and unsupported characters will be converted to hyphens.</small>
                 </label>
-                <label class="wasmer-migrate-start-field" for="wasmer-migrate-auto-token">
-                    <span>Wasmer access token <em>(optional)</em></span>
-                    <input type="password" id="wasmer-migrate-auto-token" autocomplete="off" spellcheck="false" placeholder="Paste a token to create the app in your account">
-                </label>
                 <label class="wasmer-migrate-start-copy" for="wasmer-migrate-consent">
                     <input type="checkbox" id="wasmer-migrate-consent">
                     I understand that Wasmer Migrate will send the complete site database (including user records and password hashes), uploads, plugins, and themes to Wasmer to create the destination site. See the <a href="https://wasmer.io/terms" target="_blank" rel="noopener noreferrer">Wasmer Terms</a> and <a href="https://wasmer.io/policies/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
                 </label>
                 <button type="button" class="button button-primary wasmer-migrate-primary-action" id="wasmer-migrate-auto-start" disabled>Migrate to Wasmer</button>
-                <p class="wasmer-migrate-start-copy">With a token, Wasmer will create the WordPress app in your existing account. Without one, Wasmer will create a temporary app.<strong class="wasmer-migrate-site-unchanged">Your current site will not be changed and will keep working as usual.</strong></p>
+                <p class="wasmer-migrate-start-copy"><strong>If you migrate without an access token, the new Wasmer app will not initially be linked to your account; after the transfer is complete, you must claim it to keep it.</strong><strong class="wasmer-migrate-site-unchanged">Your current site will not be changed and will keep working as usual.</strong></p>
                 <button type="button" class="button" id="wasmer-migrate-advanced-toggle" aria-expanded="false" aria-controls="wasmer-migrate-advanced">Advanced configuration</button>
             </div>
             <div class="wasmer-migrate-advanced" id="wasmer-migrate-advanced" aria-hidden="true">
                 <div class="wasmer-migrate-form-grid">
+                    <label>
+                        <span>Wasmer access token (optional)</span>
+                        <input type="password" id="wasmer-migrate-auto-token" autocomplete="off" spellcheck="false" placeholder="Paste a token to create the app in your account">
+                    </label>
                     <label>
                         <span>Wasmer registry URL</span>
                         <input type="url" id="wasmer-migrate-auto-graphql-url" value="<?php echo esc_attr(wasmer_migrate_auto_default_graphql_url()); ?>">
