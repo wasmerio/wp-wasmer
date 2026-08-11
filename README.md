@@ -18,6 +18,14 @@ cd wasmer/tests
 pnpm test
 ```
 
+Install the root development dependencies and check all project PHP for syntax
+errors and PHP 7.4+ compatibility:
+
+```bash
+composer install
+scripts/lint-php.sh
+```
+
 Start a local WordPress instance for manual testing:
 
 ```bash
