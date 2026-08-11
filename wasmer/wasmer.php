@@ -111,7 +111,7 @@ function wasmer_dcu_block_core_download($reply, $package, $upgrader)
   if ($upgrader instanceof Core_Upgrader) {
     $error = new WP_Error(
       'core_upgrade_disabled',
-      __('Manual WordPress core upgrades are disabled. Please use the Wasmer WordPress Settings to upgrade the WP version.', 'wasmer')
+      __('Manual WordPress core upgrades are disabled. Please use the Wasmer WordPress Settings to upgrade the WP version.', 'wasmer-hosting-integration')
     );
     $error->add_data([
       'help_url' => wasmer_app_dashboard_wp_settings_url(WASMER_APP_ID),
@@ -143,11 +143,11 @@ function wasmer_dcu_admin_notice()
       $settings_link = sprintf(
         '<a href="%s" class="button button-primary">%s</a>',
         esc_url($upgrade_link),
-        esc_html__('Go to Wasmer WordPress Settings to upgrade WP', 'wasmer')
+        esc_html__('Go to Wasmer WordPress Settings to upgrade WP', 'wasmer-hosting-integration')
       );
       $upgrade_message = sprintf(
         /* translators: 1: current WordPress version, 2: available WordPress version, 3: link to Wasmer settings. */
-        __('You can upgrade from WordPress %1$s to WordPress %2$s using the Wasmer WordPress Settings. %3$s', 'wasmer'),
+        __('You can upgrade from WordPress %1$s to WordPress %2$s using the Wasmer WordPress Settings. %3$s', 'wasmer-hosting-integration'),
         esc_html(get_bloginfo('version')),
         esc_html($latest_version),
         $settings_link
@@ -155,10 +155,10 @@ function wasmer_dcu_admin_notice()
       wp_die(
         wp_kses_post(
           '<div class="notice notice-warning"><p>' .
-          esc_html__('Manual WordPress core upgrades are disabled.', 'wasmer') .
+          esc_html__('Manual WordPress core upgrades are disabled.', 'wasmer-hosting-integration') .
           '</p></div><div><p>' . $upgrade_message . '</p></div>'
         ),
-        esc_html__('WordPress Core Update Disabled', 'wasmer'),
+        esc_html__('WordPress Core Update Disabled', 'wasmer-hosting-integration'),
         array(
           'response' => 403,
           'back_link' => true,
@@ -173,13 +173,13 @@ function wasmer_dcu_admin_notice()
         esc_url($upgrade_link),
         sprintf(
           /* translators: %s: available WordPress version. */
-          esc_html__('Update to version %s from Wasmer WordPress Settings', 'wasmer'),
+          esc_html__('Update to version %s from Wasmer WordPress Settings', 'wasmer-hosting-integration'),
           esc_html($latest_version)
         )
       );
       $notice = sprintf(
         /* translators: 1: available WordPress version label, 2: link to Wasmer settings. */
-        __('%1$s is available for upgrade. %2$s', 'wasmer'),
+        __('%1$s is available for upgrade. %2$s', 'wasmer-hosting-integration'),
         $version_label,
         $settings_link
       );
@@ -219,15 +219,15 @@ if (wasmer_is_managed_environment()) {
 function wasmer_host_managed_background_updates()
 {
   return array(
-    'label'       => __('WordPress updates are managed by the host', 'wasmer'),
+    'label'       => __('WordPress updates are managed by the host', 'wasmer-hosting-integration'),
     'status'      => 'good', // good | recommended | critical
     'badge'       => array(
-      'label' => __('Security', 'wasmer'),
+      'label' => __('Security', 'wasmer-hosting-integration'),
       'color' => 'blue',
     ),
     'description' => sprintf(
       '<p>%s</p>',
-      esc_html__('Core background updates are intentionally disabled because WordPress core updates are applied by the hosting platform.', 'wasmer')
+      esc_html__('Core background updates are intentionally disabled because WordPress core updates are applied by the hosting platform.', 'wasmer-hosting-integration')
     ),
     'actions'     => '',
     'test'        => 'background_updates',

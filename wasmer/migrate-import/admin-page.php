@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 function wasmer_import_admin_menu()
 {
-    if (!WASMER_MIGRATIONS_UI_ENABLED) {
+    if (!WASMER_APP_ID || !WASMER_MIGRATIONS_UI_ENABLED) {
         return;
     }
 
@@ -160,7 +160,7 @@ function wasmer_import_ajax_dependency_report()
     }
     check_ajax_referer('wasmer_import_dependency_report', 'nonce');
 
-    $session_id = sanitize_key($_GET['session'] ?? '');
+    $session_id = isset($_GET['session']) ? sanitize_key(wp_unslash($_GET['session'])) : '';
     wp_send_json_success(wasmer_import_dependency_report($session_id));
 }
 add_action('wp_ajax_wasmer_import_dependency_report', 'wasmer_import_ajax_dependency_report');

@@ -6,7 +6,8 @@ if (!defined('ABSPATH')) {
 
 function wasmer_import_root_dir()
 {
-    return trailingslashit(WP_CONTENT_DIR) . 'wasmer-import';
+    $uploads = wp_upload_dir();
+    return trailingslashit($uploads['basedir']) . 'wasmer-hosting-integration/import';
 }
 
 function wasmer_import_sessions_dir()

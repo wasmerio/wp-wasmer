@@ -17,7 +17,7 @@ const HOST = "127.0.0.1";
 const SERVER_URL = `http://${HOST}:${PORT}`;
 
 const LATEST_WP_VERSION = "7.0";
-const WASMER_PLUGIN_VERSION = "0.4.5";
+const WASMER_PLUGIN_VERSION = "0.5.0";
 const WP_VERSION = process.env.WP_VERSION || "6.8.2";
 const PHP_VERSION = process.env.PHP_VERSION || "8.3";
 
@@ -179,6 +179,16 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
           body,
           regex,
           "Expected to find at least one Wasmer Control Panel link"
+        );
+        assert.match(
+          body,
+          /<script[^>]+src=('|")[^'"]*\/wasmer\/admin-menu\.js[^'"]*('|")/,
+          "Expected the Wasmer admin menu script to be enqueued"
+        );
+        assert.match(
+          body,
+          /window\.wasmerAdminMenu\s*=/,
+          "Expected the Wasmer admin menu configuration to use an inline script registration"
         );
       });
       if (WP_VERSION !== LATEST_WP_VERSION) {
@@ -563,6 +573,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
   });
 
   describe("WP-CLI", () => {
+    it("resolves migration destinations through WordPress paths", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/import-paths.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
+    });
+
     it("uses WP-CLI extension names for liveconfig slugs", () => {
       const req = spawnSync(
         "node",

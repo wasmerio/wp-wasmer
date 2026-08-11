@@ -62,7 +62,11 @@ if ($kind === 'import') {
     if (!$id) {
         wasmer_e2e_error('Missing import session id.');
     }
-    $root = trailingslashit(WP_CONTENT_DIR) . 'wasmer-import';
+    $uploads = wp_upload_dir();
+    if (!empty($uploads['error'])) {
+        wasmer_e2e_error($uploads['error']);
+    }
+    $root = trailingslashit($uploads['basedir']) . 'wasmer-hosting-integration/import';
     $session_root = $root . '/' . sanitize_key($id);
     wasmer_e2e_assert_guarded_dir($root);
     wasmer_e2e_assert_guarded_dir($root . '/sessions');

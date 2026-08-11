@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 
 function wasmer_import_add_dashboard_panel()
 {
-    if (!WASMER_MIGRATIONS_UI_ENABLED) {
+    if (!WASMER_APP_ID || !WASMER_MIGRATIONS_UI_ENABLED) {
         return;
     }
 
