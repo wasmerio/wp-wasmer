@@ -87,10 +87,20 @@ function wasmer_import_copy_dir($source, $destination, $excluded_top_dirs = [])
 
 function wasmer_import_content_destination($relative_path)
 {
-    if (strpos($relative_path, 'wp-content/') !== 0) {
-        return null;
+    $uploads = wp_get_upload_dir();
+    $roots = [
+        'wp-content/uploads/' => $uploads['basedir'],
+        'wp-content/themes/' => get_theme_root(),
+        'wp-content/plugins/' => WP_PLUGIN_DIR,
+    ];
+
+    foreach ($roots as $prefix => $root) {
+        if (strpos($relative_path, $prefix) === 0) {
+            return trailingslashit($root) . substr($relative_path, strlen($prefix));
+        }
     }
-    return trailingslashit(WP_CONTENT_DIR) . substr($relative_path, strlen('wp-content/'));
+
+    return null;
 }
 
 function wasmer_import_validate_copied_content($manifest)
@@ -165,8 +175,9 @@ function wasmer_import_final_active_plugins($imported_active_plugins, $destinati
         return is_string($plugin) && $plugin !== 'wasmer-migrate/wasmer-migrate.php';
     });
 
-    if (in_array('wp-wasmer/wp-wasmer.php', $destination_active_plugins, true)) {
-        $active_plugins[] = 'wp-wasmer/wp-wasmer.php';
+    $current_plugin = plugin_basename(WP_WASMER_PLUGIN_MAIN_FILE);
+    if (in_array($current_plugin, $destination_active_plugins, true)) {
+        $active_plugins[] = $current_plugin;
     }
 
     return array_values(array_unique($active_plugins));
@@ -178,7 +189,7 @@ function wasmer_import_validate_plugin_file($plugin_file)
     if ($plugin_file === '' || strpos($plugin_file, '../') !== false || strpos($plugin_file, '/') === 0) {
         return false;
     }
-    return is_readable(trailingslashit(WP_CONTENT_DIR) . 'plugins/' . $plugin_file);
+    return is_readable(trailingslashit(WP_PLUGIN_DIR) . $plugin_file);
 }
 
 function wasmer_import_validate_active_dependencies()
@@ -198,7 +209,7 @@ function wasmer_import_validate_active_dependencies()
     $stylesheet = sanitize_file_name((string) get_option('stylesheet'));
     $template = sanitize_file_name((string) get_option('template'));
     foreach (array_unique(array_filter([$stylesheet, $template])) as $theme_slug) {
-        if (!is_readable(trailingslashit(WP_CONTENT_DIR) . 'themes/' . $theme_slug . '/style.css')) {
+        if (!is_readable(trailingslashit(get_theme_root($theme_slug)) . $theme_slug . '/style.css')) {
             return new WP_Error('wasmer_import_active_theme_missing', 'Active theme files are missing after import: ' . $theme_slug, ['status' => 500]);
         }
     }
@@ -915,6 +926,17 @@ function wasmer_import_start($session_id)
     if (is_string($core_version_valid) && $core_version_valid !== '') {
         wasmer_import_log($session_id, $core_version_valid);
     }
+    $uploads = wp_upload_dir();
+    if (!empty($uploads['error']) || empty($uploads['basedir'])) {
+        return new WP_Error(
+            'wasmer_import_upload_dir_unavailable',
+            'The WordPress uploads directory is not available.',
+            ['status' => 500]
+        );
+    }
+    $uploads_destination = $uploads['basedir'];
+    $themes_destination = get_theme_root();
+    $plugins_destination = WP_PLUGIN_DIR;
     $source_prefix = (string) ($manifest['source']['table_prefix'] ?? '');
     $destination_prefix = (string) $wpdb->prefix;
     $staging_prefix = wasmer_import_staging_prefix($destination_prefix, $session_id);
@@ -987,7 +1009,7 @@ function wasmer_import_start($session_id)
 
     $uploads_source = wasmer_import_session_dir($session_id) . '/files/wp-content/uploads';
     if (is_dir($uploads_source)) {
-        $copied = wasmer_import_copy_dir($uploads_source, WP_CONTENT_DIR . '/uploads');
+        $copied = wasmer_import_copy_dir($uploads_source, $uploads_destination);
         if (is_wp_error($copied)) {
             wasmer_import_fail_session($session, $copied);
             return $copied;
@@ -996,7 +1018,7 @@ function wasmer_import_start($session_id)
     }
     $themes_source = wasmer_import_session_dir($session_id) . '/files/wp-content/themes';
     if (is_dir($themes_source)) {
-        $copied = wasmer_import_copy_dir($themes_source, WP_CONTENT_DIR . '/themes');
+        $copied = wasmer_import_copy_dir($themes_source, $themes_destination);
         if (is_wp_error($copied)) {
             wasmer_import_fail_session($session, $copied);
             return $copied;
@@ -1005,7 +1027,12 @@ function wasmer_import_start($session_id)
     }
     $plugins_source = wasmer_import_session_dir($session_id) . '/files/wp-content/plugins';
     if (is_dir($plugins_source)) {
-        $copied = wasmer_import_copy_dir($plugins_source, WP_CONTENT_DIR . '/plugins', ['wasmer-migrate', 'wp-wasmer']);
+        $current_plugin_dir = dirname(plugin_basename(WP_WASMER_PLUGIN_MAIN_FILE));
+        $excluded_plugin_dirs = ['wasmer-migrate', 'wp-wasmer'];
+        if ($current_plugin_dir !== '.') {
+            $excluded_plugin_dirs[] = $current_plugin_dir;
+        }
+        $copied = wasmer_import_copy_dir($plugins_source, $plugins_destination, $excluded_plugin_dirs);
         if (is_wp_error($copied)) {
             wasmer_import_fail_session($session, $copied);
             return $copied;

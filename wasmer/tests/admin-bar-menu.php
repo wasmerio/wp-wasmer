@@ -6,6 +6,7 @@ define('WASMER_PERISHABLE_TIMESTAMP', '');
 
 $wasmer_test_logged_in = false;
 $wasmer_test_is_admin = false;
+$wasmer_test_can_manage = false;
 
 function is_user_logged_in()
 {
@@ -17,6 +18,12 @@ function is_admin()
 {
     global $wasmer_test_is_admin;
     return $wasmer_test_is_admin;
+}
+
+function current_user_can($capability)
+{
+    global $wasmer_test_can_manage;
+    return $capability === 'manage_options' && $wasmer_test_can_manage;
 }
 
 function add_action()
@@ -38,12 +45,13 @@ class Wasmer_Test_Admin_Bar
     }
 }
 
-function wasmer_test_top_bar_menus($logged_in, $is_admin)
+function wasmer_test_top_bar_menus($logged_in, $is_admin, $can_manage = false)
 {
-    global $wasmer_test_logged_in, $wasmer_test_is_admin;
+    global $wasmer_test_logged_in, $wasmer_test_is_admin, $wasmer_test_can_manage;
 
     $wasmer_test_logged_in = $logged_in;
     $wasmer_test_is_admin = $is_admin;
+    $wasmer_test_can_manage = $can_manage;
 
     $admin_bar = new Wasmer_Test_Admin_Bar();
     wasmer_add_top_bar_menu($admin_bar);
@@ -85,8 +93,14 @@ wasmer_assert_count(
 
 wasmer_assert_count(
     2,
-    wasmer_test_top_bar_menus(true, true),
-    'Wasmer admin bar menu should render for logged-in admin requests.'
+    wasmer_test_top_bar_menus(true, true, true),
+    'Wasmer admin bar menu should render for administrators who can manage the site.'
+);
+
+wasmer_assert_count(
+    0,
+    wasmer_test_top_bar_menus(true, true, false),
+    'Wasmer admin bar menu should not render for users who cannot manage the site.'
 );
 
 echo "ok\n";

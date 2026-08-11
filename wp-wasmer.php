@@ -9,7 +9,7 @@
  * x-release-please-start-version
  * Version: 0.5.0
  * x-release-please-end
- * Text Domain: wasmer
+ * Text Domain: wasmer-hosting-integration
  * Requires at least: 6.0
  * Tested up to: 7.0
  * Requires PHP: 7.4
@@ -24,13 +24,13 @@
  * x-release-please-end
  */
 
-// x-release-please-start-version
-define( 'WP_WASMER_PLUGIN_VERSION', '0.5.0' );
-// x-release-please-end
-
 if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
+
+// x-release-please-start-version
+define( 'WP_WASMER_PLUGIN_VERSION', '0.5.0' );
+// x-release-please-end
 
 define( 'WP_WASMER_PLUGIN_MINIMUM_PHP', '7.4' );
 define( 'WP_WASMER_PLUGIN_MAIN_FILE', __FILE__ );
@@ -68,7 +68,7 @@ function wasmer_display_php_version_notice() {
 	echo '<div class="notice notice-error"><p>';
 	printf(
 		/* translators: 1: required version, 2: currently used version */
-		esc_html__( 'WP Wasmer requires at least PHP version %1$s. Your site is currently running on PHP %2$s.', 'wasmer' ),
+		esc_html__( 'WP Wasmer requires at least PHP version %1$s. Your site is currently running on PHP %2$s.', 'wasmer-hosting-integration' ),
 		esc_html( WP_WASMER_PLUGIN_MINIMUM_PHP ),
 		esc_html( phpversion() )
 	);

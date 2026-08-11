@@ -84,7 +84,7 @@ function wasmer_get_perishable_time_left() {
 }
 
 function wasmer_add_top_bar_menu($admin_bar) {
-    if (!is_user_logged_in() || !is_admin()) {
+    if (!WASMER_APP_ID || !is_user_logged_in() || !is_admin() || !current_user_can('manage_options')) {
         return;
     }
 
@@ -149,6 +149,10 @@ function wasmer_add_top_bar_menu($admin_bar) {
 function wasmer_add_admin_menu() {
     global $submenu;
 
+    if (!WASMER_APP_ID) {
+        return;
+    }
+
     $svg_icon = 'data:image/svg+xml;base64,' . base64_encode(wasmer_icon());
 
     add_menu_page(
@@ -157,8 +161,7 @@ function wasmer_add_admin_menu() {
         'manage_options',   // Capability
         'wasmer-cdn-cache', // Menu slug (top-level lands on the CDN Cache page)
         'wasmer_cdn_cache_admin_page', // Callback function
-        $svg_icon,  // Icon (dashicons or URL to a custom icon)
-        2.1                 // Position after Dashboard
+        $svg_icon  // Icon (dashicons or URL to a custom icon)
     );
 
     add_submenu_page(
@@ -199,29 +202,33 @@ function wasmer_add_admin_menu() {
 }
 
 // Sidebar submenu entries added via $submenu don't support target=_blank,
-// so retarget the external Control Panel link with a small footer script.
-add_action('admin_footer', 'wasmer_admin_menu_retarget_external_links');
-function wasmer_admin_menu_retarget_external_links() {
-    if (!WASMER_APP_ID) {
+// so retarget the external Control Panel link from an enqueued admin script.
+add_action('admin_enqueue_scripts', 'wasmer_admin_menu_enqueue');
+function wasmer_admin_menu_enqueue() {
+    if (!WASMER_APP_ID || !current_user_can('manage_options')) {
         return;
     }
-    ?>
-    <script>
-    (function () {
-        var link = document.querySelector('#adminmenu a[href="<?php echo esc_url(wasmer_app_dashboard_url(WASMER_APP_ID)); ?>"]');
-        if (link) {
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-        }
-    })();
-    </script>
-    <?php
+
+    $script_path = WP_WASMER_PLUGIN_DIR_PATH . 'wasmer/admin-menu.js';
+    $script_version = file_exists($script_path) ? filemtime($script_path) : WP_WASMER_PLUGIN_VERSION;
+    wp_enqueue_script(
+        'wasmer-admin-menu',
+        WP_WASMER_PLUGIN_DIR_URL . 'wasmer/admin-menu.js',
+        [],
+        $script_version,
+        true
+    );
+    wp_add_inline_script(
+        'wasmer-admin-menu',
+        'window.wasmerAdminMenu = ' . wp_json_encode([
+            'dashboardUrl' => wasmer_app_dashboard_url(WASMER_APP_ID),
+        ]) . ';',
+        'before'
+    );
 }
 
 function wasmer_add_dashboard_widget() {
-    global $wp_meta_boxes;
-
-    if (!WASMER_APP_ID) {
+    if (!WASMER_APP_ID || !current_user_can('manage_options')) {
         return;
     }
 
@@ -230,13 +237,6 @@ function wasmer_add_dashboard_widget() {
         'Manage on Wasmer',
         'wasmer_dashboard_widget_display'
     );
-
-    if (isset($wp_meta_boxes['dashboard']['normal']['core']['wasmer_manage_dashboard_widget'])) {
-        $wasmer_widget = $wp_meta_boxes['dashboard']['normal']['core']['wasmer_manage_dashboard_widget'];
-        unset($wp_meta_boxes['dashboard']['normal']['core']['wasmer_manage_dashboard_widget']);
-        $wp_meta_boxes['dashboard']['normal']['core'] =
-            array_merge(array('wasmer_manage_dashboard_widget' => $wasmer_widget), $wp_meta_boxes['dashboard']['normal']['core']);
-    }
 }
 
 function wasmer_get_64_bit_required_plugins() {

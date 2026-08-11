@@ -5,7 +5,7 @@ WP Wasmer includes a first-party migration flow for moving an existing WordPress
 The system is split across two plugins:
 
 - `wp-wasmer`
-  Runs on the destination Wasmer WordPress app. It creates import sessions, accepts transferred content, stages files under `wp-content`, and applies the import.
+  Runs on the destination Wasmer WordPress app. It creates import sessions, accepts transferred content, stages files in the WordPress uploads directory, and applies the import.
 - `wasmer-migrate`
   Runs on the source WordPress site. It parses an import code, exports the source database and content files, and transfers them to the destination in chunks.
 
@@ -20,9 +20,9 @@ The system is split across two plugins:
 7. The source transfers the database dump and files in bounded JSON/base64 chunks.
 8. The destination verifies sizes and hashes, then marks the transfer complete.
 9. A destination administrator starts the import.
-10. The destination imports the database, copies staged content into `wp-content`, validates active dependencies, and marks the session complete.
+10. The destination imports the database, copies staged content into the runtime-resolved uploads, theme, and plugin directories, validates active dependencies, and marks the session complete.
 
-The destination does not rely on PHP multipart upload temp files. Incoming chunks are written into persistent storage under `wp-content/wasmer-import`.
+The destination does not rely on PHP multipart upload temp files. Incoming chunks are written into persistent storage under `wp_upload_dir()['basedir']/wasmer-hosting-integration/import`.
 
 ## Destination Plugin
 
@@ -31,7 +31,7 @@ The destination implementation lives in `wasmer/migrate-import/` and is loaded b
 Import data is stored under:
 
 ```text
-wp-content/wasmer-import/
+<uploads-basedir>/wasmer-hosting-integration/import/
   sessions/
     <session>.json
   <session>/
@@ -217,7 +217,7 @@ After transfer completion, the destination import process:
 3. imports the source database through staging and backup table prefixes;
 4. preserves destination-specific Wasmer settings;
 5. retains source credentials and metadata when a destination user has the same login or email, while preserving destination-only users;
-6. copies staged `wp-content` files into the destination content directory;
+6. copies staged files into the destination directories resolved by `wp_upload_dir()`, `get_theme_root()`, and `WP_PLUGIN_DIR`;
 7. preserves the destination `wp-wasmer` plugin activation;
 8. removes `wasmer-migrate` from the imported active plugin list;
 9. validates active plugin and theme files;

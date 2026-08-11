@@ -12,7 +12,7 @@ The topology intentionally uses two served WordPress sites:
 The source and target use separate WordPress volumes and separate databases. The source transfer path is:
 
 ```text
-source WP-CLI -> source WordPress runtime -> HTTP REST -> target WordPress webserver -> target wp-content/wasmer-import
+source WP-CLI -> source WordPress runtime -> HTTP REST -> target WordPress webserver -> target uploads/wasmer-hosting-integration/import
 ```
 
 No migration data is copied directly between containers by the test harness.

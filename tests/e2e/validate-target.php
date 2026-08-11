@@ -30,7 +30,8 @@ if (!$post || strpos($post->post_content, $marker) === false) {
 if (strpos($post->post_content, 'http://source') !== false) {
     WP_CLI::error('Migrated post still contains source URL.');
 }
-if (strpos($post->post_content, content_url('uploads/')) === false) {
+$upload_dir = wp_get_upload_dir();
+if (strpos($post->post_content, trailingslashit($upload_dir['baseurl'])) === false) {
     WP_CLI::error('Migrated post does not contain target content URL.');
 }
 
@@ -47,7 +48,10 @@ if (!is_array($uploads) || count($uploads) < 2) {
 foreach ($uploads as $upload) {
     $relative = $upload['relative'] ?? '';
     $expected_hash = $upload['sha256'] ?? '';
-    $path = trailingslashit(WP_CONTENT_DIR) . ltrim($relative, '/');
+    if (strpos($relative, 'uploads/') !== 0) {
+        WP_CLI::error('Migrated upload has an invalid logical path: ' . $relative);
+    }
+    $path = trailingslashit($upload_dir['basedir']) . substr($relative, strlen('uploads/'));
     if (!is_readable($path)) {
         WP_CLI::error('Migrated upload missing: ' . $relative);
     }
@@ -102,19 +106,22 @@ if (!$source_admin || !wp_check_password('password', $source_admin->user_pass, $
 }
 
 $active_plugins = get_option('active_plugins', []);
-if (!is_array($active_plugins) || !in_array('wp-wasmer/wp-wasmer.php', $active_plugins, true)) {
-    WP_CLI::error('Target wp-wasmer plugin was not preserved as active.');
+$wasmer_plugins = is_array($active_plugins) ? array_filter($active_plugins, function ($plugin_file) {
+    return basename($plugin_file) === 'wp-wasmer.php';
+}) : [];
+if (!$wasmer_plugins) {
+    WP_CLI::error('Target Wasmer Hosting Integration plugin was not preserved as active.');
 }
 if (!in_array('wasmer-e2e-active-plugin/wasmer-e2e-active-plugin.php', $active_plugins, true)) {
     WP_CLI::error('Source active plugin was not preserved as active.');
 }
-if (!is_readable(trailingslashit(WP_CONTENT_DIR) . 'plugins/wasmer-e2e-active-plugin/wasmer-e2e-active-plugin.php')) {
+if (!is_readable(trailingslashit(WP_PLUGIN_DIR) . 'wasmer-e2e-active-plugin/wasmer-e2e-active-plugin.php')) {
     WP_CLI::error('Source active plugin files were not copied.');
 }
 if (get_stylesheet() !== 'wasmer-e2e-active-theme' || get_template() !== 'wasmer-e2e-active-theme') {
     WP_CLI::error('Source active theme was not preserved.');
 }
-if (!is_readable(trailingslashit(WP_CONTENT_DIR) . 'themes/wasmer-e2e-active-theme/style.css')) {
+if (!is_readable(trailingslashit(get_theme_root('wasmer-e2e-active-theme')) . 'wasmer-e2e-active-theme/style.css')) {
     WP_CLI::error('Source active theme files were not copied.');
 }
 
