@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ruleset name="WP Wasmer PHP compatibility">
+    <description>Check project PHP code for compatibility with PHP 7.4 and newer.</description>
+
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+    <arg name="parallel" value="8"/>
+    <arg value="ps"/>
+
+    <file>wp-wasmer.php</file>
+    <file>wasmer</file>
+    <file>wasmer-migrate</file>
+    <file>tests/e2e</file>
+
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/dist/*</exclude-pattern>
+    <exclude-pattern>*/build/*</exclude-pattern>
+
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="7.4-"/>
+</ruleset>

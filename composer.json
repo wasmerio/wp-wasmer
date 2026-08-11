@@ -1,0 +1,23 @@
+{
+    "name": "wasmerio/wp-wasmer-dev",
+    "description": "Development tooling for the WP Wasmer plugins.",
+    "type": "project",
+    "license": "GPL-2.0-or-later",
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "squizlabs/php_codesniffer": "^3.13"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "platform": {
+            "php": "7.4.33"
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "lint:php": "scripts/lint-php.sh"
+    }
+}
