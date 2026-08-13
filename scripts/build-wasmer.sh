@@ -4,12 +4,28 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 output_dir="${1:-${repo_root}/dist}"
-version_check_args=()
-if [[ -n "${WP_WASMER_EXPECTED_VERSION:-}" ]]; then
-    version_check_args+=(--expected "${WP_WASMER_EXPECTED_VERSION}")
+
+if [[ ! -f "${repo_root}/version.txt" ]]; then
+    echo "Could not determine the Wasmer release version: version.txt is missing." >&2
+    exit 1
 fi
-"${repo_root}/scripts/check-wasmer-version.sh" "${version_check_args[@]}"
-version="$(tr -d '\r\n' < "${repo_root}/version.txt")"
+
+mapfile -t version_lines < "${repo_root}/version.txt"
+if [[ ${#version_lines[@]} -ne 1 || -z "${version_lines[0]}" ]]; then
+    echo "Could not determine the Wasmer release version: version.txt must contain exactly one version." >&2
+    exit 1
+fi
+
+version="${version_lines[0]}"
+if [[ ! "${version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+    echo "Could not determine the Wasmer release version: invalid semantic version in version.txt: ${version}" >&2
+    exit 1
+fi
+
+if [[ -n "${WP_WASMER_RELEASE_TAG:-}" && "${WP_WASMER_RELEASE_TAG#v}" != "${version}" ]]; then
+    echo "Wasmer release tag ${WP_WASMER_RELEASE_TAG} does not match version.txt (${version})." >&2
+    exit 1
+fi
 
 for command_name in rsync zip unzip; do
     if ! command -v "${command_name}" >/dev/null 2>&1; then
@@ -28,6 +44,7 @@ install -m 0644 "${repo_root}/wp-wasmer.php" "${plugin_dir}/wp-wasmer.php"
 install -m 0644 "${repo_root}/readme.txt" "${plugin_dir}/readme.txt"
 install -m 0644 "${repo_root}/LICENSE" "${plugin_dir}/LICENSE"
 rsync -a --exclude '/tests/' "${repo_root}/wasmer/" "${plugin_dir}/wasmer/"
+"${repo_root}/scripts/stamp-wasmer-version.sh" "${plugin_dir}" "${version}"
 
 if find "${plugin_dir}" -type d -name tests -print -quit | grep -q .; then
     echo "Refusing to package a tests directory." >&2
