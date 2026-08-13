@@ -8,14 +8,6 @@
       "extra-files": [
         {
           "type": "generic",
-          "path": "wp-wasmer.php"
-        },
-        {
-          "type": "generic",
-          "path": "readme.txt"
-        },
-        {
-          "type": "generic",
           "path": "wasmer-migrate/wasmer-migrate.php"
         },
         {
