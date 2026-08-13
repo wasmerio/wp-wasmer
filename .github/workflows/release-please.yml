@@ -33,6 +33,8 @@ jobs:
 
       - name: Build plugin archives
         if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          WP_WASMER_EXPECTED_VERSION: ${{ steps.release.outputs.tag_name }}
         run: |
           scripts/build-wasmer.sh
           scripts/build-wasmer-migrate.sh

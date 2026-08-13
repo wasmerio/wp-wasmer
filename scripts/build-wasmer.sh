@@ -4,12 +4,12 @@ set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 output_dir="${1:-${repo_root}/dist}"
-version="$(sed -n "s/^define( 'WP_WASMER_PLUGIN_VERSION', '\([^']*\)' );$/\1/p" "${repo_root}/wp-wasmer.php")"
-
-if [[ -z "${version}" ]]; then
-    echo "Could not determine the Wasmer plugin version." >&2
-    exit 1
+version_check_args=()
+if [[ -n "${WP_WASMER_EXPECTED_VERSION:-}" ]]; then
+    version_check_args+=(--expected "${WP_WASMER_EXPECTED_VERSION}")
 fi
+"${repo_root}/scripts/check-wasmer-version.sh" "${version_check_args[@]}"
+version="$(tr -d '\r\n' < "${repo_root}/version.txt")"
 
 for command_name in rsync zip unzip; do
     if ! command -v "${command_name}" >/dev/null 2>&1; then
@@ -50,4 +50,3 @@ if unzip -Z1 "${archive}" | grep -Eq '(^|/)(tests?|node_modules)(/|$)'; then
 fi
 
 echo "Built ${archive}"
-

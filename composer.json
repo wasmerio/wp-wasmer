@@ -18,6 +18,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "lint:php": "scripts/lint-php.sh"
+        "lint:php": "scripts/lint-php.sh",
+        "lint:version": "tests/scripts/check-wasmer-version.sh"
     }
 }
