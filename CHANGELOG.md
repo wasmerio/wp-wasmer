@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/wasmerio/wp-wasmer/compare/v0.5.0...v0.5.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* **plugin:** address WordPress.org review feedback ([20a0780](https://github.com/wasmerio/wp-wasmer/commit/20a078090cbd653a2131b1b165c32b409a523212))
+
 ## [0.5.0](https://github.com/wasmerio/wp-wasmer/compare/v0.4.5...v0.5.0) (2026-08-10)
 
 
