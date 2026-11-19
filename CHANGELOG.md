@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2](https://github.com/wasmerio/wp-wasmer/compare/v0.5.1...v0.5.2) (2026-11-19)
+
+
+### Bug Fixes
+
+* check WORDPRESS_LOGIN permission for magic login ([cdf2fc7](https://github.com/wasmerio/wp-wasmer/commit/cdf2fc7d528eda0703ec39c46a554a549006e0eb))
+* check WORDPRESS_LOGIN permission for magic login ([3647177](https://github.com/wasmerio/wp-wasmer/commit/36471774120a701fe602d3fd9000a0de944700d4))
+
 ## [0.5.1](https://github.com/wasmerio/wp-wasmer/compare/v0.5.0...v0.5.1) (2026-08-13)
 
 
