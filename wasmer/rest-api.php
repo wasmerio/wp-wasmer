@@ -430,7 +430,7 @@ function wasmer_magiclogin_callback($request)
         node(id: $appid) {
             ... on DeployApp {
                 id
-                viewerCan(action: DEPLOY_APP)
+                viewerCan(action: WORDPRESS_LOGIN)
             }
         }
     }

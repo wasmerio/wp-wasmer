@@ -91,6 +91,7 @@ function createMockGraphQLServer() {
           }
           enum OwnerAction {
             DEPLOY_APP
+            WORDPRESS_LOGIN
           }
           type DeployApp implements Node {
             id: ID!
@@ -111,10 +112,14 @@ function createMockGraphQLServer() {
               if (
                 context.request.headers.get("authorization") == "Bearer 123"
               ) {
-                return { id: "123", viewerCan: true, __typename: "DeployApp" };
+                return { id: "123", __typename: "DeployApp" };
               }
               return null;
             },
+          },
+          // A login token may log in to WordPress, not deploy.
+          DeployApp: {
+            viewerCan: (parent, args) => args.action === "WORDPRESS_LOGIN",
           },
           Mutation: {
             purgeAppCdnCache: (parent, args, context) => {
