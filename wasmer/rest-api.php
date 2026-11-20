@@ -315,16 +315,32 @@ function wasmer_auto_login($args)
     exit;
 }
 
+/**
+ * The administrator a magic login signs in as: the one whose email is the
+ * Wasmer user's, otherwise the oldest administrator. The backend has already
+ * checked that the Wasmer user may log in to this app (WORDPRESS_LOGIN), and
+ * the site's administrator email often isn't theirs: CLI and imported sites,
+ * or a teammate on a team-owned app.
+ */
 function wasmer_get_user_id($email)
 {
     $email = sanitize_email((string) $email);
-    if ($email === '') {
-        return null;
+    if ($email !== '') {
+        $user = get_user_by('email', $email);
+        if ($user && user_can($user, 'manage_options')) {
+            return (int) $user->ID;
+        }
     }
 
-    $user = get_user_by('email', $email);
-    if ($user && user_can($user, 'manage_options')) {
-        return (int) $user->ID;
+    $administrators = get_users([
+        'capability' => 'manage_options',
+        'orderby' => 'ID',
+        'order' => 'ASC',
+        'number' => 1,
+        'fields' => 'ID',
+    ]);
+    if (!empty($administrators)) {
+        return (int) $administrators[0];
     }
     return null;
 }

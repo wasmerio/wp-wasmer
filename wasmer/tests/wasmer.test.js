@@ -101,17 +101,20 @@ function createMockGraphQLServer() {
         resolvers: {
           Query: {
             viewer: (parent, args, context) => {
-              if (
-                context.request.headers.get("authorization") == "Bearer 123"
-              ) {
+              const auth = context.request.headers.get("authorization");
+              if (auth == "Bearer 123") {
                 return { email: "admin@localhost.com" };
+              }
+              // A Wasmer user with no WordPress account on the site, e.g. a
+              // teammate on a team-owned app.
+              if (auth == "Bearer teammate") {
+                return { email: "teammate@example.com" };
               }
               return null;
             },
             node: (parent, args, context) => {
-              if (
-                context.request.headers.get("authorization") == "Bearer 123"
-              ) {
+              const auth = context.request.headers.get("authorization");
+              if (auth == "Bearer 123" || auth == "Bearer teammate") {
                 return { id: "123", __typename: "DeployApp" };
               }
               return null;
@@ -293,6 +296,27 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         //   dashboardBody.includes("Google for WooCommerce"),
         //   "Expected dashboard widget to list Google for WooCommerce"
         // );
+      });
+
+      it("signs in as an administrator when no user has the viewer's email", async () => {
+        const fetchWithCookie = fetchCookie(fetch);
+        const req = await fetchWithCookie(
+          `${SERVER_URL}/?rest_route=/wasmer/v1/magiclogin&magiclogin=teammate`,
+          { redirect: "manual" }
+        );
+        assert.equal(req.status, 302, `Expected status 302: ${await req.clone().text()}`);
+        assert.match(
+          req.headers.get("set-cookie"),
+          /wordpress_logged_in_/i,
+          "Expected set-cookie to be wordpress_logged_in_"
+        );
+
+        const dashboardReq = await fetchWithCookie(`${SERVER_URL}/wp-admin/`);
+        assert.equal(dashboardReq.status, 200, "Expected status 200");
+        assert.ok(
+          (await dashboardReq.text()).includes("Manage on Wasmer"),
+          "Expected the administrator's dashboard"
+        );
       });
     });
 
