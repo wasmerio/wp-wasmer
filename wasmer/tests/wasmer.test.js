@@ -313,9 +313,15 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
 
         const dashboardReq = await fetchWithCookie(`${SERVER_URL}/wp-admin/`);
         assert.equal(dashboardReq.status, 200, "Expected status 200");
+        const dashboard = await dashboardReq.text();
         assert.ok(
-          (await dashboardReq.text()).includes("Manage on Wasmer"),
+          dashboard.includes("Manage on Wasmer"),
           "Expected the administrator's dashboard"
+        );
+        assert.match(
+          dashboard,
+          /class="display-name">admin</,
+          "Expected to be signed in as the site's oldest administrator"
         );
       });
     });

@@ -296,7 +296,7 @@ function wasmer_auto_login($args)
     $user_id       = wasmer_get_user_id($args['email']);
     $user          = get_user_by('ID', $user_id);
     if (!$user) {
-        return new WP_Error('wasmer_login_user_not_found', 'No matching WordPress administrator was found.', array('status' => 403));
+        return new WP_Error('wasmer_login_user_not_found', 'This site has no WordPress administrator.', array('status' => 403));
     }
 
     $login_username = $user->user_login;
