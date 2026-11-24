@@ -346,6 +346,19 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
       );
       assert.equal(unauthorized.status, 401, "Expected authentication to be required");
 
+      const wrongToken = await fetch(
+        `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
+        { headers: { Authorization: "Bearer not-a-token" } }
+      );
+      assert.equal(wrongToken.status, 403, "Expected an unknown token to be refused");
+
+      // Every WordPress app has a liveconfig token; only CDN-cache apps have an API token.
+      const withLiveconfigToken = await fetch(
+        `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
+        { headers: { Authorization: "Bearer liveconfig-token-123" } }
+      );
+      assert.equal(withLiveconfigToken.status, 200, "Expected the liveconfig token to be accepted");
+
       const req = await fetch(
         `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
         { headers: { Authorization: "Bearer api-token-123" } }

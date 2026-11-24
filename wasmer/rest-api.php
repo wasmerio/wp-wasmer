@@ -382,9 +382,18 @@ function wasmer_graphql_query($url, $query, $variables, $authToken = null)
 
 
 
+/**
+ * Liveconfig answers the backend only. It accepts the app's liveconfig token,
+ * which every WordPress app on Wasmer has, or its API token, which only apps
+ * with the CDN cache have.
+ */
 function wasmer_liveconfig_permission_callback($request)
 {
-    if (!WASMER_API_TOKEN) {
+    $accepted_tokens = array_values(array_filter([
+        (string) WASMER_LIVECONFIG_TOKEN,
+        (string) WASMER_API_TOKEN,
+    ]));
+    if (empty($accepted_tokens)) {
         return new WP_Error('wasmer_liveconfig_unavailable', 'Live configuration is unavailable.', ['status' => 503]);
     }
 
@@ -394,11 +403,14 @@ function wasmer_liveconfig_permission_callback($request)
     }
 
     $token = trim(substr($authorization, 7));
-    if ($token === '' || !hash_equals((string) WASMER_API_TOKEN, $token)) {
-        return new WP_Error('wasmer_liveconfig_forbidden', 'Invalid authorization token.', ['status' => 403]);
+    if ($token !== '') {
+        foreach ($accepted_tokens as $accepted_token) {
+            if (hash_equals($accepted_token, $token)) {
+                return true;
+            }
+        }
     }
-
-    return true;
+    return new WP_Error('wasmer_liveconfig_forbidden', 'Invalid authorization token.', ['status' => 403]);
 }
 
 function wasmer_liveconfig_callback($request)
