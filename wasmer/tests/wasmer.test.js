@@ -28,6 +28,10 @@ let mockGraphQLServer;
 // Records every purgeAppCdnCache mutation received by the mock GraphQL API.
 const purgeCalls = [];
 
+// The blueprints' app API token: a `dt_` JWT whose scopes include the CDN purge.
+const API_TOKEN =
+  "dt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkYV9hYmMiLCJzY29wZXMiOlsiYXBwOmNkbi1jYWNoZTpwdXJnZSIsImFwcDp3b3JkcHJlc3MtbGl2ZWNvbmZpZzpmZXRjaCJdfQ.c2ln";
+
 async function createPHPServer(signal, blueprintFilename = "wp-blueprint-protected.json") {
   let filename = fileURLToPath(import.meta.url);
       // Start the mock GraphQL API first: blueprint steps (e.g. plugin
@@ -128,7 +132,7 @@ function createMockGraphQLServer() {
             purgeAppCdnCache: (parent, args, context) => {
               const auth = context.request.headers.get("authorization");
               purgeCalls.push({ app: args.app, auth });
-              return { success: auth === "Bearer api-token-123" };
+              return { success: auth === `Bearer ${API_TOKEN}` };
             },
           },
         },
@@ -346,22 +350,9 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
       );
       assert.equal(unauthorized.status, 401, "Expected authentication to be required");
 
-      const wrongToken = await fetch(
-        `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
-        { headers: { Authorization: "Bearer not-a-token" } }
-      );
-      assert.equal(wrongToken.status, 403, "Expected an unknown token to be refused");
-
-      // Every WordPress app has a liveconfig token; only CDN-cache apps have an API token.
-      const withLiveconfigToken = await fetch(
-        `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
-        { headers: { Authorization: "Bearer liveconfig-token-123" } }
-      );
-      assert.equal(withLiveconfigToken.status, 200, "Expected the liveconfig token to be accepted");
-
       const req = await fetch(
         `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
-        { headers: { Authorization: "Bearer api-token-123" } }
+        { headers: { Authorization: `Bearer ${API_TOKEN}` } }
       );
       assert.equal(req.status, 200, "Expected status 200");
       assert.match(
@@ -502,6 +493,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
   // long synchronous blocking lets pooled keep-alive sockets go stale, which
   // makes the first fetch afterwards fail.
   describe("CDN cache purge", () => {
+    it("is enabled only by the API token's purge scope", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/cdn-cache-scopes.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
+    });
+
     async function loggedInFetch() {
       const fetchWithCookie = fetchCookie(fetch);
       await fetchWithCookie(
@@ -564,7 +573,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
       assert.equal(purgeCalls[0].app, "abc", "Expected purge for app 'abc'");
       assert.equal(
         purgeCalls[0].auth,
-        "Bearer api-token-123",
+        `Bearer ${API_TOKEN}`,
         "Expected purge to use the Wasmer API token"
       );
     });

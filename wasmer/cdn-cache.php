@@ -12,9 +12,37 @@ if (!defined('ABSPATH')) {
  *  shutdown, coalescing all triggers of a request into one API call.
  * ---------------------------------------------------------------------- */
 
+/**
+ * Whether the app's API token carries `$scope`.
+ *
+ * The token (`dt_<jwt>`) comes from the app's own environment, so its payload
+ * is read without verifying the signature; the backend checks that on use.
+ */
+function wasmer_api_token_has_scope($token, $scope)
+{
+    $token = (string) $token;
+    if (strpos($token, 'dt_') === 0) {
+        $token = substr($token, 3);
+    }
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return false;
+    }
+    $payload = base64_decode(strtr($parts[1], '-_', '+/'), true);
+    $claims = $payload === false ? null : json_decode($payload, true);
+    $scopes = is_array($claims) && isset($claims['scopes']) && is_array($claims['scopes'])
+        ? $claims['scopes']
+        : [];
+    return in_array($scope, $scopes, true);
+}
+
+/**
+ * Every WordPress app has an API token; only CDN-cache apps' tokens may purge.
+ */
 function wasmer_cdn_cache_enabled()
 {
-    return (bool) (WASMER_API_TOKEN && WASMER_APP_ID && WASMER_GRAPHQL_URL);
+    return (bool) (WASMER_APP_ID && WASMER_GRAPHQL_URL)
+        && wasmer_api_token_has_scope(WASMER_API_TOKEN, 'app:cdn-cache:purge');
 }
 
 /**
