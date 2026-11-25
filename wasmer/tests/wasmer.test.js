@@ -493,24 +493,6 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
   // long synchronous blocking lets pooled keep-alive sockets go stale, which
   // makes the first fetch afterwards fail.
   describe("CDN cache purge", () => {
-    it("is enabled only by the API token's purge scope", () => {
-      const req = spawnSync(
-        "node",
-        [
-          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
-          "php",
-          "wasmer/tests/cdn-cache-scopes.php",
-        ],
-        {
-          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
-          encoding: "utf8",
-        }
-      );
-
-      assert.equal(req.status, 0, req.stderr || req.stdout);
-      assert.match(req.stdout, /ok/);
-    });
-
     async function loggedInFetch() {
       const fetchWithCookie = fetchCookie(fetch);
       await fetchWithCookie(
@@ -606,6 +588,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         1,
         "Expected exactly one CDN purge call"
       );
+    });
+
+    it("is enabled only by the API token's purge scope", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/cdn-cache-scopes.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
     });
   });
 
