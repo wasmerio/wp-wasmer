@@ -28,6 +28,10 @@ let mockGraphQLServer;
 // Records every purgeAppCdnCache mutation received by the mock GraphQL API.
 const purgeCalls = [];
 
+// The blueprints' app API token: a `dt_` JWT whose scopes include the CDN purge.
+const API_TOKEN =
+  "dt_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkYV9hYmMiLCJzY29wZXMiOlsiYXBwOmNkbi1jYWNoZTpwdXJnZSIsImFwcDp3b3JkcHJlc3MtbGl2ZWNvbmZpZzpmZXRjaCJdfQ.c2ln";
+
 async function createPHPServer(signal, blueprintFilename = "wp-blueprint-protected.json") {
   let filename = fileURLToPath(import.meta.url);
       // Start the mock GraphQL API first: blueprint steps (e.g. plugin
@@ -101,17 +105,20 @@ function createMockGraphQLServer() {
         resolvers: {
           Query: {
             viewer: (parent, args, context) => {
-              if (
-                context.request.headers.get("authorization") == "Bearer 123"
-              ) {
+              const auth = context.request.headers.get("authorization");
+              if (auth == "Bearer 123") {
                 return { email: "admin@localhost.com" };
+              }
+              // A Wasmer user with no WordPress account on the site, e.g. a
+              // teammate on a team-owned app.
+              if (auth == "Bearer teammate") {
+                return { email: "teammate@example.com" };
               }
               return null;
             },
             node: (parent, args, context) => {
-              if (
-                context.request.headers.get("authorization") == "Bearer 123"
-              ) {
+              const auth = context.request.headers.get("authorization");
+              if (auth == "Bearer 123" || auth == "Bearer teammate") {
                 return { id: "123", __typename: "DeployApp" };
               }
               return null;
@@ -125,7 +132,7 @@ function createMockGraphQLServer() {
             purgeAppCdnCache: (parent, args, context) => {
               const auth = context.request.headers.get("authorization");
               purgeCalls.push({ app: args.app, auth });
-              return { success: auth === "Bearer api-token-123" };
+              return { success: auth === `Bearer ${API_TOKEN}` };
             },
           },
         },
@@ -294,6 +301,33 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         //   "Expected dashboard widget to list Google for WooCommerce"
         // );
       });
+
+      it("signs in as an administrator when no user has the viewer's email", async () => {
+        const fetchWithCookie = fetchCookie(fetch);
+        const req = await fetchWithCookie(
+          `${SERVER_URL}/?rest_route=/wasmer/v1/magiclogin&magiclogin=teammate`,
+          { redirect: "manual" }
+        );
+        assert.equal(req.status, 302, `Expected status 302: ${await req.clone().text()}`);
+        assert.match(
+          req.headers.get("set-cookie"),
+          /wordpress_logged_in_/i,
+          "Expected set-cookie to be wordpress_logged_in_"
+        );
+
+        const dashboardReq = await fetchWithCookie(`${SERVER_URL}/wp-admin/`);
+        assert.equal(dashboardReq.status, 200, "Expected status 200");
+        const dashboard = await dashboardReq.text();
+        assert.ok(
+          dashboard.includes("Manage on Wasmer"),
+          "Expected the administrator's dashboard"
+        );
+        assert.match(
+          dashboard,
+          /class="display-name">admin</,
+          "Expected to be signed in as the site's oldest administrator"
+        );
+      });
     });
 
     it("Check works", async () => {
@@ -318,7 +352,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
 
       const req = await fetch(
         `${SERVER_URL}/?rest_route=/wasmer/v1/liveconfig`,
-        { headers: { Authorization: "Bearer api-token-123" } }
+        { headers: { Authorization: `Bearer ${API_TOKEN}` } }
       );
       assert.equal(req.status, 200, "Expected status 200");
       assert.match(
@@ -521,7 +555,7 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
       assert.equal(purgeCalls[0].app, "abc", "Expected purge for app 'abc'");
       assert.equal(
         purgeCalls[0].auth,
-        "Bearer api-token-123",
+        `Bearer ${API_TOKEN}`,
         "Expected purge to use the Wasmer API token"
       );
     });
@@ -554,6 +588,24 @@ describe("WP-Now PHP/WordPress Server", async ({ signal }) => {
         1,
         "Expected exactly one CDN purge call"
       );
+    });
+
+    it("is enabled only by the API token's purge scope", () => {
+      const req = spawnSync(
+        "node",
+        [
+          "wasmer/tests/node_modules/@wp-now/wp-now/main.js",
+          "php",
+          "wasmer/tests/cdn-cache-scopes.php",
+        ],
+        {
+          cwd: resolve(dirname(fileURLToPath(import.meta.url)), "../.."),
+          encoding: "utf8",
+        }
+      );
+
+      assert.equal(req.status, 0, req.stderr || req.stdout);
+      assert.match(req.stdout, /ok/);
     });
   });
 
